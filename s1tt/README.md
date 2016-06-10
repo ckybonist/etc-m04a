@@ -1,0 +1,11 @@
+# 第一階段實際時間計算 - s1_travel_time.py
+
+- s1 代表 "stage/step 1"。本程式會計算每個 ETC站間 的所有車種之平均時間。程式最終
+會將結果存成csv檔，檔名為 [date]_[time]_s1tt.csv，例如20160606_072500_s1tt.csv。
+
+- 輸出檔案格式為: { (ETC入口測站編號, ETC出口測站編號, 平均時間), ... }
+
+- 輸出檔位置為: 執行此此程式時所在的目錄下的 output 資料夾
+
+- 本程式使用方法: ./s1_travel_time.py [dir_name / file_name]
+
