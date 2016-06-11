@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+g#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -27,16 +27,21 @@ def save(result, fname):
     csv.write(result, dirname + '/' + fname)
 
 """
-    Calcuate mean travel time of all types of cars between two ETC stations by:
+    @ Calcuate mean travel time of all types of cars between two ETC stations by:
         * mean travel time (mtt_c)
         * number of cars (nc_c)
-    p.s.  c means car's type
+        * c means car's type
 
-    Formula (for each ETC segment):
+    @ Formula (for each ETC segment):
         floor(
             (mtt_1 * nc_1) + (mtt_2 * nc_2) + ... + (mtt_5 * nc_5) /
             (nc_1 + nc_2 + ... + nc_5)
         )
+
+    @ Note:
+        * if no car pass the ETC section, then the travel time will be:
+          ETC_section_distance(km) / 80(km/h) * 3600
+
 """
 def calc_s1tt(fname):
     data = csv.read(fname)
