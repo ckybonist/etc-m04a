@@ -14,7 +14,7 @@ python3 travel_time.py batch
          或是
 ./travel_time.py batch
 ```
-*執行時，請確認當前位置是在 sensor_section/ 裡面，否則有可能會出錯*
+*執行時，請確認當前位置是在 `sensor_section/` 裡面，否則有可能會出錯*
 
 輸出檔會存在 `sensor_section/output`
 
