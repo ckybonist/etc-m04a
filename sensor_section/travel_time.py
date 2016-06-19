@@ -13,22 +13,17 @@ import sys
 import math
 from collections import namedtuple, defaultdict
 
-from utils import CSVUtil
+from utils import CSVUtil, createSensingIntervals, listdirNoHidden
 
 
 ## Constant
 DATA_EXT = '.csv'
 NUM_CAR_TYPE = 5
-INPUT = '../data/'
-OUTPUT = '../output/sensor_section/'
+TIME_INTERVAL = 5  # minutes
+INPUT_DIR = '../data/'
+OUTPUT_DIR = 'output/'
 SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
 
-
-## Helper Functions
-def listdirNoHidden(path):
-    for f in os.listdir(path):
-        if not f.startswith('.'):
-            yield f
 
 ### ====================== MAIN ============================
 """
@@ -52,7 +47,7 @@ def listdirNoHidden(path):
 def calcTravelTimeStartAt(fname):
     csv = CSVUtil()
     data = csv.read(fname)
-    avg_travel_time = lambda nu, de: math.floor(nu / de)
+    calcAvgTravelTime = lambda nu, de: math.floor(nu / de)
     result = []
 
     c = 0
@@ -66,7 +61,7 @@ def calcTravelTimeStartAt(fname):
 
         if c > 0 and c % NUM_CAR_TYPE == 0:
             travel_time = -1 if denominator == 0 \
-                             else avg_travel_time(numerator, denominator)
+                             else calcAvgTravelTime(numerator, denominator)
 
             sensor_section = SensorSection(entry=row[1], exit=row[2])
             result.append((sensor_section, travel_time))
@@ -84,6 +79,21 @@ def calcHourlyTravelTime(hour_dir):
         result.append(calcTravelTimeStartAt(f))
     return result
 
+"""
+    Merge hourly result to daily result (single dictionary)
+    {
+        SensorSection(entry, exit) : AvergeTravelTime
+        ...
+    }
+"""
+def mergeHourlyResults(hourly_results):
+    result = defaultdict(list)  # where the magic happens
+    for hres in hourly_results:
+        for info in hres:  # info: (etc_entry, etc_exit, avg_travel_time)
+            for section, avg_travel_times in info:
+                result[section].append(avg_travel_times)
+    return result
+
 
 """
     return result which has format like:
@@ -91,45 +101,60 @@ def calcHourlyTravelTime(hour_dir):
         NOTE: "0:00" means average travel time at 0:00
 
 """
-def calcDailyTravelTime(path):
+def calcDailyTravelTime(date, rootdir):
+    path = INPUT_DIR + rootdir+'/' + date
     os.chdir(path)
+
     hour_dirs = listdirNoHidden('.')
-    tmpres = list(map(calcHourlyTravelTime, hour_dirs))
-    print(tmpres[0][0][:10])
+    hourly_results = list(map(calcHourlyTravelTime, hour_dirs))
+    result = mergeHourlyResults(hourly_results)  # defaultdcit(list)
 
-    result = defaultdict(list)  # where the magic happens
-    # for hd in hour_dirs:
-    #     files = listdirNoHidden(hd)
-    #     prefix = './' + hd + '/'
-    #     for f in files:
-    #         f = prefix + f
-    #         travel_time = calcTravelTimeStartAt(f)
-    #         for k, v in travel_time:
-    #             print("section: {}".format(k))
-    #             print("Avg Time: {}".format(v))
-    #             break
-    #         break
-    #     break
-    #return result
+    os.chdir('../../../sensor_section')  # back to sensor_section dir
+    return result
 
-def save(result, fname):
-    dirname = 'output'
-    file_ext = '.csv'
-    if dirname not in os.listdir('.'):
-        os.mkdir(dirname)
-    fname = os.path.splitext(fname)[0]  # remove file extension
-    fname = fname.split('_', 2)[-1]  # retain date from orignal file name
-    fname += '_s1tt' + file_ext
-    csv.write(result, dirname + '/' + fname)
+"""
+    Add attribute description and trasnform the dict into list
+"""
+def transformFormatForOutput(data, date):
+    result = []
+    result.append(["日期", "測站入口", "測站出口"] + createSensingIntervals(TIME_INTERVAL));
+    for section, avg_travel_times in data.items():
+        row = [date, section.entry, section.exit] + avg_travel_times
+        result.append(row)
+    return result
 
+def save(data, dest):
+    csv = CSVUtil()
+    if not "sensor_section" in os.getcwd():
+        print("Not in the sensor_section dir")
+        exit(1)
+    if not 'output' in os.listdir('.'):
+        os.mkdir('output')
+    csv.write(data, dest)
+
+def analyze(rootdir, date, save_dest):
+    data = calcDailyTravelTime(date, rootdir)
+    data = transformFormatForOutput(data, date)
+    dest = OUTPUT_DIR + '/' + date + ".csv"
+    save(data, save_dest)
 
 def run(arg):
+    #slash = lambda p: os.path.join(p, "", "")
     if arg == "batch":
-        pass
-    elif arg == "test":  # for testing
+        for rootdir in listdirNoHidden(INPUT_DIR):
+            data_dir = INPUT_DIR + rootdir + '/'
+            output_dir = OUTPUT_DIR + rootdir + '/'
+            if not rootdir in os.listdir(OUTPUT_DIR):
+                os.mkdir(output_dir)
+
+            for date in listdirNoHidden(data_dir):
+                save_dest = output_dir + date + ".csv"
+                analyze(rootdir, date, save_dest)
+    elif arg == "test":
+        rootdir = "201507"
         date = "20150702"
-        path = INPUT + "201507/" + date
-        result = calcDailyTravelTime(path)
+        save_dest = OUTPUT_DIR + date + ".csv"
+        analyze(rootdir, date, save_dest)
 
 ### ============= End Main =======================
 
@@ -137,6 +162,9 @@ def run(arg):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+
+    if not "output" in os.listdir('.'):
+        os.mkdir("output")
 
     if not args:
         print('Give me a file name or directory')
