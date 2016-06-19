@@ -5,7 +5,7 @@
 *注意！資料夾名稱必須為 data*
 
 
-# 目前程式分為以下三個部分:
+# 程式分為以下三個部分:
 
 ## 測站間平均時間 (sensor_section)
 進入 sensor_section 資料夾，並執行 travel_time.py:
