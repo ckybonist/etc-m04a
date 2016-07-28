@@ -20,7 +20,7 @@ from utils import CSVUtil, createSensingIntervals, listdirNoHidden
 DATA_EXT = '.csv'
 NUM_CAR_TYPE = 5
 TIME_INTERVAL = 5  # minutes
-INPUT_DIR = '../data/'
+INPUT_DIR = 'data/'
 OUTPUT_DIR = 'output/'
 SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
 
@@ -138,7 +138,7 @@ def calcDailyTravelTime(date, rootdir):
     hourly_results = list(map(calcHourlyTravelTime, hour_dirs))
     result = mergeHourlyResults(hourly_results)  # OrderedDict(list)
 
-    os.chdir('../../../sensor_section')  # back to sensor_section dir
+    os.chdir('../../../')  # back to root dir
 
     return result
 
