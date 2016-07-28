@@ -11,7 +11,7 @@
 import os
 import sys
 import math
-from collections import namedtuple, defaultdict
+from collections import namedtuple, OrderedDict#defaultdict
 
 from utils import CSVUtil, createSensingIntervals, listdirNoHidden
 
@@ -44,30 +44,40 @@ SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magi
            2. ETC_section_distance(km) / 80(km/h) * 3600
            p.s.: #2 will apply when etc locations is settle down
 """
-def calcTravelTimeStartAt(fname):
+def getSensorSectionPosition(section_id):
+    return float(section_id[3:7]) / 10
+
+def calc(fname):
+    def myFn(weightedTime, num_cars, sid_start, sid_end):
+        result = 0.0
+        if num_cars == 0:
+            start_pos = getSensorSectionPosition(sid_start)
+            end_pos = getSensorSectionPosition(sid_end)
+            d = abs(end_pos - start_pos)
+            VELOCITY = 80  # km/h
+            result = math.floor(d / VELOCITY) * 3600  # second
+        else:
+            result =  math.floor(weightedTime / num_cars)
+        return result
+
+
     csv = CSVUtil()
     data = csv.read(fname)
-    calcAvgTravelTime = lambda nu, de: math.floor(nu / de)
-    result = []
-
     c = 0
-    numerator = 0
-    denominator = 0
+    weightedTime = 0
+    num_cars = 0
+    result = []
 
     for row in data:
         c += 1
-        numerator += int(row[4]) * int(row[5])
-        denominator += int(row[5])
-
+        weightedTime += int(row[4]) * int(row[5])
+        num_cars += int(row[5])
         if c > 0 and c % NUM_CAR_TYPE == 0:
-            travel_time = -1 if denominator == 0 \
-                             else calcAvgTravelTime(numerator, denominator)
-
+            travel_time = myFn(weightedTime, num_cars, row[1], row[2])
             sensor_section = SensorSection(entry=row[1], exit=row[2])
             result.append((sensor_section, travel_time))
             numerator = 0
             denominator = 0
-
     return result
 
 def calcHourlyTravelTime(hour_dir):
@@ -76,7 +86,7 @@ def calcHourlyTravelTime(hour_dir):
     result = []
     for f in files:
         f = prefix + f
-        result.append(calcTravelTimeStartAt(f))
+        result.append(calc(f))
     return result
 
 """
@@ -87,13 +97,32 @@ def calcHourlyTravelTime(hour_dir):
     }
 """
 def mergeHourlyResults(hourly_results):
-    result = defaultdict(list)  # where the magic happens
-    for hres in hourly_results:
-        for info in hres:  # info: (etc_entry, etc_exit, avg_travel_time)
+    result = OrderedDict()  # where the magic happens
+    for res in hourly_results:
+        for info in res:  # info: (etc_entry, etc_exit, avg_travel_time)
             for section, avg_travel_times in info:
-                result[section].append(avg_travel_times)
+                if section not in result:
+                    result[section] = list()
+                else:
+                    result[section].append(avg_travel_times)
     return result
 
+def debug_xs(obj):
+    for i, e in enumerate(obj):
+        if i == 3:
+            break
+        else:
+            print(e)
+            i += 1
+
+def debug_dict(obj):
+    i = 0
+    for k, v in obj.items():
+        if i == 3:
+            break
+        else:
+            print("{} -> {}".format(k, v))
+            i+=1
 
 """
     return result which has format like:
@@ -107,9 +136,10 @@ def calcDailyTravelTime(date, rootdir):
 
     hour_dirs = listdirNoHidden('.')
     hourly_results = list(map(calcHourlyTravelTime, hour_dirs))
-    result = mergeHourlyResults(hourly_results)  # defaultdcit(list)
+    result = mergeHourlyResults(hourly_results)  # OrderedDict(list)
 
     os.chdir('../../../sensor_section')  # back to sensor_section dir
+
     return result
 
 """
