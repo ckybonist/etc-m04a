@@ -2,7 +2,7 @@
 
 # 原始資料
 請自行在專案根目錄創建 **data** 資料夾，並將原始資料放在其中。
-*注意！資料夾名稱必須為 data*
+*注意！資料夾名稱不能隨意命名*
 
 
 # 程式分為以下三個部分:
@@ -16,7 +16,7 @@ python3 travel_time.py batch
 ```
 *執行時，請確認當前位置是在 `sensor_section/` 裡面，否則有可能會出錯*
 
-輸出檔會存在 `sensor_section/output`
+輸出檔會存在 `sensor_section/output`。（output 資料夾會由程式建立)
 
 ## 路段平均時間 (interchange_section)
 TODO...
