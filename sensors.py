@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
+    Travel time of sensor sections:
+
     Input Data: TDCS_M04A_[date]_[time]
+
     Data Format:
         row[0], row[1], row[2], row[3], row[4], row[5]
         date_time,  etc_entrance, etc_exit, car_type, mean_travel_time, num_cars
@@ -11,18 +14,12 @@
 import os
 import sys
 import math
-from collections import namedtuple, OrderedDict#defaultdict
+from collections import OrderedDict
 
+from config import *
 from utils import CSVUtil, createSensingIntervals, listdirNoHidden
 
 
-## Constant
-DATA_EXT = '.csv'
-NUM_CAR_TYPE = 5
-TIME_INTERVAL = 5  # minutes
-INPUT_DIR = 'data/'
-OUTPUT_DIR = 'output/'
-SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
 
 
 ### ====================== MAIN ============================
@@ -61,8 +58,7 @@ def calc(fname):
         return result
 
 
-    csv = CSVUtil()
-    data = csv.read(fname)
+    data = CSVUtil.read(fname)
     c = 0
     weightedTime = 0
     num_cars = 0
@@ -153,20 +149,10 @@ def transformFormatForOutput(data, date):
         result.append(row)
     return result
 
-def save(data, dest):
-    csv = CSVUtil()
-    if not "sensor_section" in os.getcwd():
-        print("Not in the sensor_section dir")
-        exit(1)
-    if not 'output' in os.listdir('.'):
-        os.mkdir('output')
-    csv.write(data, dest)
-
 def analyze(rootdir, date, save_dest):
     data = calcDailyTravelTime(date, rootdir)
     data = transformFormatForOutput(data, date)
-    dest = OUTPUT_DIR + '/' + date + ".csv"
-    save(data, save_dest)
+    CSVUtil.save(data, save_dest)
 
 def run(arg):
     #slash = lambda p: os.path.join(p, "", "")
