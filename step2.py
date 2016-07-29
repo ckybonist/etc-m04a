@@ -19,7 +19,6 @@ class Analyzer:
         sensor sections.
     """
     def run(self, paths):
-        #return self.calcTravelTimes(paths[0])
         return [ self.calcTravelTimes(path) for path in paths ]
 
     def calcTravelTimes(self, path):
@@ -39,7 +38,6 @@ class Analyzer:
 
         result = mappedList(sum, zip(first_times, middle_times, final_times))
         result = mappedList(round, result)
-        #result = [ round(x+y+z) for x,y,z in zip(start_times, middle_times, end_times) ]
 
         return result
 
@@ -55,8 +53,6 @@ class Analyzer:
         middle_times = [ sumMappedList(float, times) for times in middle_times ]
 
         return middle_times
-
-
 
     """
         Refine data and sensor-locations-records:
@@ -77,7 +73,7 @@ class Analyzer:
         self.__data = [ fn(e) for e in self.__data ]
 
 
-    """ BUG: 南北向不一樣找法
+    """ TODO: Refine code
         記錄路徑中所有的測站區間
     """
     def __getSensorSectionsOfPath(self, path, direction):
@@ -163,7 +159,8 @@ class Analyzer:
         pos_se = getSensorPosition(sensor_section[1])  # end sensor position
         d2 =  pos_se - pos_ic
 
-        return round(d2 / d1, 3)
+        #return round(d2 / d1, 3)  # for testing
+        return d2 / d1
 
     def __getFinalEndProportion(self, sensor_section):
         d1 = getDistanceOfSensorSection(sensor_section)
@@ -172,7 +169,8 @@ class Analyzer:
         pos_ss = getSensorPosition(sensor_section[0])  # starting sensor position
         d2 = pos_ie - pos_ss
 
-        return round(d2 / d1, 3)
+        #return round(d2 / d1, 3)  # for testing
+        return d2 / d1
 
 
     def __getSensorSectionTravelTime(self, section):
