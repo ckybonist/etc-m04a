@@ -11,6 +11,20 @@ def listdirNoHidden(path):
         if not f.startswith('.'):
             yield f
 
+def mappedList(fn, iteralbe):
+    return list(map(fn, iteralbe))
+
+def sumMappedList(fn, iteralbe):
+    return sum(list(map(fn, iteralbe)))
+
+def getSensorPosition(section_id):
+    return float(section_id[3:7]) / 10
+
+def getDistanceOfSensorSection(section):
+    p_a = getSensorPosition(section[0])
+    p_b = getSensorPosition(section[1])
+    return abs(p_b - p_a)
+
 """
     Generate a list like: [ "0:00", "0:05", ..., "23:55" ]
 """

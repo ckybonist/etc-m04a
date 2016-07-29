@@ -23,7 +23,7 @@ from utils import CSVUtil, createSensingIntervals, listdirNoHidden
 
 
 ### ====================== MAIN ============================
-"""
+""" TODO: UGLY CODE
     @ Calcuate mean travel time of all types of cars between two ETC stations by:
         * mean travel time (mtt_c)
         * number of cars (nc_c)
@@ -41,18 +41,15 @@ from utils import CSVUtil, createSensingIntervals, listdirNoHidden
            2. ETC_section_distance(km) / 80(km/h) * 3600
            p.s.: #2 will apply when etc locations is settle down
 """
-def getSensorSectionPosition(section_id):
-    return float(section_id[3:7]) / 10
-
 def calc(fname):
     def myFn(weightedTime, num_cars, sid_start, sid_end):
         result = 0.0
         if num_cars == 0:
-            start_pos = getSensorSectionPosition(sid_start)
-            end_pos = getSensorSectionPosition(sid_end)
-            d = abs(end_pos - start_pos)
-            VELOCITY = 80  # km/h
-            result = math.floor(d / VELOCITY) * 3600  # second
+            start_pos = getSensorPosition(sid_start)
+            end_pos = getSensorPosition(sid_end)
+            distance = abs(end_pos - start_pos)
+            velocity = 80  # km/h
+            result = math.floor(distance / velocity) * 3600  # second
         else:
             result =  math.floor(weightedTime / num_cars)
         return result
@@ -70,7 +67,7 @@ def calc(fname):
         num_cars += int(row[5])
         if c > 0 and c % NUM_CAR_TYPE == 0:
             travel_time = myFn(weightedTime, num_cars, row[1], row[2])
-            sensor_section = SensorSection(entry=row[1], exit=row[2])
+            sensor_section = SensorSection(entry=row[1], exit=row[2])  # magic
             result.append((sensor_section, travel_time))
             numerator = 0
             denominator = 0
