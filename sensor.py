@@ -16,179 +16,171 @@ import sys
 import math
 from collections import OrderedDict
 
-from config import Config
-from utils import SensorSection, CSVUtil, createSensingIntervals, listdirNoHidden
+from config import *
+from utils import *
 
 
 
 ### ====================== MAIN ============================
 class Sensor:
     def __init__(self):
-        pass
+        self.__result = []
 
+    def analyze(self):
+        calcHour = self.calcHourlyTravelTime
+        mergeHour = self.mergeHourlyResults
+        formatOutput = self.formatForOutput
+        save = self.__save
 
+        inputdir = INPUT_DIR
 
+        for anchor_dir in subdirs(inputdir):  # In data/
+            for date in subdirs(inputdir + anchor_dir):  # In 201507/
+                os.chdir(inputdir + anchor_dir + "/" + date)
+                #self.__result = self.calcDailyTravelTime(anchor_dir, date)
 
-""" TODO: UGLY CODE
-    @ Calcuate mean travel time of all types of cars between two ETC stations by:
-        * mean travel time (mtt_c)
-        * number of cars (nc_c)
-        * c means car's type
+                #-------------------------
+                hour_dirs = subdirs('.')
+                hourly_results = [ calcHour(hd) for hd in hour_dirs ]
+                self.__result = mergeHour(hourly_results)  # OrderedDict(list)
+                #-------------------------
 
-    @ Formula (for each ETC segment):
-        floor(
-            (mtt_1 * nc_1) + (mtt_2 * nc_2) + ... + (mtt_5 * nc_5) /
-            (nc_1 + nc_2 + ... + nc_5)
-        )
+                self.__result = formatOutput(date)
+                os.chdir('../../../')  # In data/
 
-    @ Note:
-        * if no car pass the ETC section, then the travel time will be:
-           1. -1
-           2. ETC_section_distance(km) / 80(km/h) * 3600
-           p.s.: #2 will apply when etc locations is settle down
-"""
-def calc(fname):
-    def myFn(weightedTime, num_cars, sid_start, sid_end):
-        result = 0.0
-        if num_cars == 0:
-            start_pos = getSensorPosition(sid_start)
-            end_pos = getSensorPosition(sid_end)
-            distance = abs(end_pos - start_pos)
-            velocity = 80  # km/h
-            result = math.floor(distance / velocity) * 3600  # second
-        else:
-            result =  math.floor(weightedTime / num_cars)
+                save(anchor_dir, date)
+
+    def __save(self, anchor_dir, date):
+        if "output" not in subdirs('.'):
+            os.mkdir("output")
+
+        output_dir = "{}/{}/{}".format(OUTPUT_DIR, "step1", anchor_dir)
+        if output_dir not in subdirs(OUTPUT_DIR):
+            os.makedirs(output_dir, exist_ok=True)
+
+        #print("OUTPUT: {}".format(os.getcwd()))
+        save_dest = "{}/{}".format(output_dir, date+".csv")
+        CSVUtil.save(self.__result, save_dest)
+
+    """
+        return result which has format like:
+            { ETC_entry, ETC_exit, 0:00, 0:05, ..., 23:55 }
+            NOTE: "0:00" means average travel time at 0:00
+
+    """
+    def calcDailyTravelTime(self):
+        hour_dirs = subdirs('.')
+        hourly_results = [ self.calcHourlyTravelTime(hd) for hd in hour_dirs ]
+
+        return self.mergeHourlyResults(hourly_results)  # OrderedDict(list)
+
+    """  TODO: Need to optimize
+        Merge hourly result to daily result (single dictionary)
+        {
+            SensorSection(entry, exit) : AvergeTravelTime
+            ...
+        }
+    """
+    def mergeHourlyResults(self, hourly_results):
+        result = OrderedDict()  # where the magic happens
+
+        for res in hourly_results:
+            for info in res:  # info: (etc_entry, etc_exit, avg_travel_time)
+                for section, avg_travel_times in info:
+                    if section not in result:
+                        result[section] = list()
+                    else:
+                        result[section].append(avg_travel_times)
         return result
 
 
-    data = CSVUtil.read(fname)
-    c = 0
-    weightedTime = 0
-    num_cars = 0
-    result = []
+    def calcHourlyTravelTime(self, hour_dir):
+        #print("HOUR_DIR: {}".format(hour_dir))
+        prefix = './' + hour_dir + '/'
+        return [ self.calcTravelTimeOfSensorSection(prefix + file) \
+                        for file in subfiles(hour_dir) ]
 
-    for row in data:
-        c += 1
-        weightedTime += int(row[4]) * int(row[5])
-        num_cars += int(row[5])
-        if c > 0 and c % NUM_CAR_TYPE == 0:
-            travel_time = myFn(weightedTime, num_cars, row[1], row[2])
-            sensor_section = SensorSection(entry=row[1], exit=row[2])  # magic
-            result.append((sensor_section, travel_time))
-            numerator = 0
-            denominator = 0
-    return result
 
-def calcHourlyTravelTime(hour_dir):
-    files = listdirNoHidden(hour_dir)
-    prefix = './' + hour_dir + '/'
-    result = []
-    for f in files:
-        f = prefix + f
-        result.append(calc(f))
-    return result
+    """ TODO: UGLY CODE
+        @ Calcuate mean travel time of all types of cars between two ETC stations by:
+            * mean travel time (mtt_c)
+            * number of cars (nc_c)
+            * c means car's type
 
-"""
-    Merge hourly result to daily result (single dictionary)
-    {
-        SensorSection(entry, exit) : AvergeTravelTime
-        ...
-    }
-"""
-def mergeHourlyResults(hourly_results):
-    result = OrderedDict()  # where the magic happens
-    for res in hourly_results:
-        for info in res:  # info: (etc_entry, etc_exit, avg_travel_time)
-            for section, avg_travel_times in info:
-                if section not in result:
-                    result[section] = list()
-                else:
-                    result[section].append(avg_travel_times)
-    return result
+        @ Formula (for each ETC segment):
+            floor(
+                (mtt_1 * nc_1) + (mtt_2 * nc_2) + ... + (mtt_5 * nc_5) /
+                (nc_1 + nc_2 + ... + nc_5)
+            )
 
-def debug_xs(obj):
-    for i, e in enumerate(obj):
-        if i == 3:
-            break
+        @ Note:
+            * if no car pass the ETC section, then the travel time will be:
+            1. -1
+            2. ETC_section_distance(km) / 80(km/h) * 3600
+            p.s.: #2 will apply when etc locations is settle down
+    """
+    def calcTravelTimeOfSensorSection(self, fname):
+        result = []
+        c = 0
+        weightedTime = 0
+        num_cars = 0
+        calc = self.calcTime
+
+        for row in CSVUtil.read(fname):
+            c += 1
+            weightedTime += int(row[4]) * int(row[5])
+            num_cars += int(row[5])
+            if c > 0 and c % NUM_CAR_TYPE == 0:
+                travel_time = calc(weightedTime, num_cars, row[1], row[2])
+                sensor_section = SensorSection(entry=row[1], exit=row[2])  # magic
+                result.append((sensor_section, travel_time))
+        return result
+
+    def calcTime(self, weightedTime, num_cars, sid_start, sid_end):
+        if num_cars == 0:
+            start_pos = getSensorPosition(sid_start)
+            end_pos = getSensorPosition(sid_end)
+            velocity = 80  # km/h
+            hour = 3600
+            distance = abs(end_pos - start_pos)
+            return hour * math.floor(distance / velocity)  # second
         else:
-            print(e)
-            i += 1
+            return  math.floor(weightedTime / num_cars)
 
-def debug_dict(obj):
-    i = 0
-    for k, v in obj.items():
-        if i == 3:
-            break
-        else:
-            print("{} -> {}".format(k, v))
-            i+=1
-
-"""
-    return result which has format like:
-        { ETC_entry, ETC_exit, 0:00, 0:05, ..., 23:55 }
-        NOTE: "0:00" means average travel time at 0:00
-
-"""
-def calcDailyTravelTime(date, rootdir):
-    path = INPUT_DIR + rootdir+'/' + date
-    os.chdir(path)
-
-    hour_dirs = listdirNoHidden('.')
-    hourly_results = list(map(calcHourlyTravelTime, hour_dirs))
-    result = mergeHourlyResults(hourly_results)  # OrderedDict(list)
-
-    os.chdir('../../../')  # back to root dir
-
-    return result
-
-"""
-    Add attribute description and trasnform the dict into list
-"""
-def transformFormatForOutput(data, date):
-    result = []
-    result.append(["日期", "測站入口", "測站出口"] + createSensingIntervals(TIME_INTERVAL));
-    for section, avg_travel_times in data.items():
-        row = [date, section.entry, section.exit] + avg_travel_times
-        result.append(row)
-    return result
-
-def handleDirPath(rootdir):
-    data_dir = INPUT_DIR + rootdir + '/'
-    output_dir = OUTPUT_DIR + rootdir + '/'
-    if not rootdir in os.listdir(OUTPUT_DIR):
-        os.mkdir(output_dir)
-
-def run(arg):
-    #slash = lambda p: os.path.join(p, "", "")
-    listDir = listdirNoHidden
-
-    for rootdir in listDir(INPUT_DIR):
-        handleDirPath(rootdir)
-        for date in listDir(data_dir):
-            save_dest = output_dir + date + ".csv"
-            #analyze(rootdir, date, save_dest)
-            result = calcDailyTravelTime(date, rootdir)
-            result = transformFormatForOutput(result, date)
-            CSVUtil.save(result, save_dest)
+    """
+        Add attribute description and trasnform the dict into list
+    """
+    def formatForOutput(self, date):
+        result = []
+        result.append(["日期", "測站入口", "測站出口"] + createSensingIntervals(TIME_INTERVAL));
+        for section, avg_travel_times in self.__result.items():
+            row = [date, section.entry, section.exit] + avg_travel_times
+            result.append(row)
+        return result
 
 ### ============= End Main =======================
 
+def test():
+    from profile import timing, timing2, timing3
+    #step1 = Sensor()
+    #fn = step1.calcDailyTravelTime
+    #fn = step1.calcHourlyTravelTime
+
+    #os.chdir("data/201507/20150702/")
+    #os.chdir("data/201507/20150702/")
+
+    #timing2(fn, 1)
+    #timing(fn, 72, "00")
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
+    step1 = Sensor()
+    fn = step1.analyze
+    import time
 
-    if not "output" in os.listdir('.'):
-        os.mkdir("output")
+    print (fn.__name__)
+    t1 = time.clock()
+    fn()
+    t2 = time.clock()
+    print(round(t2-t1, 3))
 
-    if not args:
-        print('Give me a file name or directory')
-        sys.exit(1)
-    else:
-        for arg in args:
-            run(arg)
-
-    rootdir = "201507"
-    date = "20150702"
-    save_dest = OUTPUT_DIR + date + ".csv"
-    analyze(rootdir, date, save_dest)

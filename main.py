@@ -4,6 +4,7 @@
 #from sensors import step1
 from interchange import Interchange as Step2
 from path import PATHS
+from config import *
 
 
 
@@ -15,7 +16,7 @@ def predict():
     #step1()
 
     step2 = Step2()
-    result = step2.analyze(PATHS, "resource/sensor_section.example.csv")
+    result = step2.analyze(PATHS, OUTPUT_DIR+"/step1/")
     print(len(result))
     print(result[3][1])
 
