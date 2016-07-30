@@ -136,11 +136,6 @@ class Interchange:
         @return: Tuple; (初始子路段比例, 最後子路段比例)
     """
     def __getBothEndsProportions(self, routes):
-        def toFloat(xs):
-            result = list(xs[:3])
-            result.extend([float(e) for e in xs[3:]])
-            return result
-
         pa = self.__getFirstEndProportion(routes[0])
         pb = self.__getFinalEndProportion(routes[-1])
 
