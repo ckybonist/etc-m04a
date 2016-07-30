@@ -9,19 +9,6 @@ from collections import namedtuple
 
 SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
 
-
-## Helper Functions
-def listdirNoHidden(path):
-    for f in os.listdir(path):
-        if not f.startswith('.'):
-            yield f
-
-def mappedList(fn, iteralbe):
-    return list(map(fn, iteralbe))
-
-def sumMappedList(fn, iteralbe):
-    return sum(list(map(fn, iteralbe)))
-
 def getSensorPosition(section_id):
     return float(section_id[3:7]) / 10
 
@@ -86,6 +73,46 @@ class CSVUtil:
         if not 'output' in os.listdir('.'):
             os.mkdir('output')
         CSVUtil.write(data, dest)
+
+
+## Helper Functions
+def subdirs(path):
+    for entry in os.scandir(path):
+        if not entry.name.startswith('.') and entry.is_dir():
+            yield entry.name
+
+def subfiles(path):
+    for entry in os.scandir(path):
+        if not entry.name.startswith('.') and entry.is_file():
+            yield entry.name
+
+def listdir(path):
+    for entry in os.scandir(path):
+        if not entry.name.startswith('.'):
+            yield entry.name
+
+def mappedList(fn, iteralbe):
+    return list(map(fn, iteralbe))
+
+def sumMappedList(fn, iteralbe):
+    return sum(list(map(fn, iteralbe)))
+
+def printList(obj):
+    for i, e in enumerate(obj):
+        if i == 3:
+            break
+        else:
+            print(e)
+            i += 1
+
+def printDict(obj):
+    i = 0
+    for k, v in obj.items():
+        if i == 3:
+            break
+        else:
+            print("{} -> {}".format(k, v))
+            i+=1
 
 
 if __name__ == "__main__":
