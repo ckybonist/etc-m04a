@@ -6,11 +6,13 @@ from utils import *
 
 
 class Interchange:
+    SENSOR_LOCATIONS = []
+
     def __init__(self):
         self.path = None
         self.__data = []
         self.__sensor_locations = []
-        self.SENSOR_LOCATIONS = CSVUtil.read("resource/etc-sensor-loc.csv")[1:]  # remove header
+        Interchange.SENSOR_LOCATIONS = CSVUtil.read("resource/etc-sensor-loc.csv")[1:]  # remove header
 
     """
         Caculating travel time of each interchange section in path then sum it.
@@ -202,7 +204,7 @@ class Interchange:
 
         self.__data = myFilter(pred_a, raw_data)
 
-        self.__sensor_locations = myFilter(pred_b, self.SENSOR_LOCATIONS)
+        self.__sensor_locations = myFilter(pred_b, Interchange.SENSOR_LOCATIONS)
 
 
 
