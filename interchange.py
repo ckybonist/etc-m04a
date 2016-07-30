@@ -2,35 +2,32 @@
 # -*- coding: utf-8 -*-
 
 
-from config import SensorSection
 from utils import *
 
 
-class Analyzer:
+class Interchange:
     def __init__(self):
-        self.SENSOR_LOCATIONS = CSVUtil.read("resource/etc-sensor-loc.csv")[1:]
-        self.DATA = CSVUtil.read("resource/sensor_section.example.csv")[1:]
         self.path = None
         self.__data = []
         self.__sensor_locations = []
+        self.SENSOR_LOCATIONS = CSVUtil.read("resource/etc-sensor-loc.csv")[1:]  # remove header
 
     """
-        Estimated travel times of paths which sum by
-        sensor sections.
+        Caculating travel time of each interchange section in path then sum it.
     """
-    def run(self, paths):
-        return [ self.calcTravelTimes(path) for path in paths ]
+    def analyze(self, paths, step1_data_path):
+        return [ self.calcTravelTimesOfPath(path, step1_data_path) for path in paths ]
 
-    def calcTravelTimes(self, path):
+    def calcTravelTimesOfPath(self, path, step1_data_path):
         self.path = path
         result = []
         direction = path[2]
+        raw_data = CSVUtil.read("resource/sensor_section.example.csv")[1:]
 
-        self.__refineData(direction)
-        routes = self.__getSensorSectionsOfPath(path, direction)  # sensor sections of path
+        self.__refineData(direction, raw_data)
+        routes = self.__listSensorSectionsOfPath(path, direction)  # sensor sections of path
 
         return self.__mergeTravelTimeOfSensorSections(routes)
-
 
     def __mergeTravelTimeOfSensorSections(self, routes):
         first_times, final_times = self.__getBothEndsSubSectionTravelTime(routes)
@@ -67,16 +64,17 @@ class Analyzer:
 
         @direction: 'N' or 'S'
     """
-    def __refineData(self, direction):
-        self.__filterDataByDirection(direction)
-        fn = lambda e: [ e[0], SensorSection(entry=e[1], exit=e[2]), e[3:] ]
+    def __refineData(self, direction, raw_data):
+        self.__filterDataByDirection(direction, raw_data)
+        def fn(e):
+            return [ e[0], SensorSection(entry=e[1], exit=e[2]), e[3:] ]
         self.__data = [ fn(e) for e in self.__data ]
 
 
     """ TODO: Refine code
         記錄路徑中所有的測站區間
     """
-    def __getSensorSectionsOfPath(self, path, direction):
+    def __listSensorSectionsOfPath(self, path, direction):
         sections = []
         flag = False
         start, end = (path[0], path[1]) \
@@ -118,14 +116,9 @@ class Analyzer:
     """
     def __getBothEndsSubSectionTravelTime(self, routes):
         start, end = routes[0], routes[-1]
-        #print(start, end)
-
-        #------------------- TODO: UGLY CODE --------------------------
         first_times = self.__getSensorSectionTravelTime(start)
         final_times = self.__getSensorSectionTravelTime(end)
-        #-------------------- TODO ------------------------------------
         first_prop, last_prop = self.__getBothEndsProportions(routes)
-
         first_times = [ float(t) * first_prop for t in first_times ]
         final_times = [ float(t) * last_prop for t in final_times ]
 
@@ -192,30 +185,33 @@ class Analyzer:
                 continue
 
 
-    def __filterDataByDirection(self, direction):
-        result = []
-        xs = []
-        predicate = None
-
-        dire = 'S' if direction == "南" else 'N'
-
+    def __filterDataByDirection(self, direction, raw_data):
         def myFilter(pred, xs):
             return [ e for e in xs if pred(e, dire) ]
 
-        pred_a = lambda e, d: e[1][-1] == d and e[2][-1] == d
-        self.__data = myFilter(pred_a, self.DATA)
+        def pred_a(e, d):
+            return e[1][-1] == d and e[2][-1] == d
 
-        pred_b = lambda e, d: e[0][-1] == d
+        def pred_b(e, d):
+            return e[0][-1] == d
+
+        result = []
+        xs = []
+        predicate = None
+        dire = 'S' if direction == "南" else 'N'
+
+        self.__data = myFilter(pred_a, raw_data)
+
         self.__sensor_locations = myFilter(pred_b, self.SENSOR_LOCATIONS)
 
 
 
 if __name__ == "__main__":
     from path import PATHS
+    analyzer = Interchange.analyze
 
-    obj = Analyzer()
+    result = analyze(TEST_PATH)
+
     TEST_PATH = [PATHS[3]]
     ACTUAL_TRAVEL_TIME = 738
-
-    result = obj.run(TEST_PATH)
-    assert(ACTUAL_TRAVEL_TIME == guess[1])  # check path-4's travel time which start at 00:05
+    assert(ACTUAL_TRAVEL_TIME == result[1])  # check travel time of path-4 which starting at 00:05

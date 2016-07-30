@@ -4,6 +4,11 @@
 import os
 import csv
 from datetime import time
+from collections import namedtuple
+
+
+SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
+
 
 ## Helper Functions
 def listdirNoHidden(path):
@@ -50,7 +55,6 @@ def createSensingIntervals(interval):
     to_str = lambda t: t.strftime("%H:%M")
     result = list(map(to_str, result))
     return result
-
 
 class CSVUtil:
     def __init__(self):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #from sensors import step1
-import step2
+from interchange import Interchange as Step2
 from path import PATHS
 
 
@@ -13,10 +13,12 @@ from path import PATHS
 """
 def predict():
     #step1()
-    process2 = step2.Analyzer()
-    result = process2.run(PATHS)
+
+    step2 = Step2()
+    result = step2.analyze(PATHS, "resource/sensor_section.example.csv")
     print(len(result))
     print(result[3][1])
+
     #step3()
 
 

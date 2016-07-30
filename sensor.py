@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Travel time of sensor sections:
+    Average travel time of sensor sections:
 
     Input Data: TDCS_M04A_[date]_[time]
 
@@ -16,13 +16,19 @@ import sys
 import math
 from collections import OrderedDict
 
-from config import *
-from utils import CSVUtil, createSensingIntervals, listdirNoHidden
-
+from config import Config
+from utils import SensorSection, CSVUtil, createSensingIntervals, listdirNoHidden
 
 
 
 ### ====================== MAIN ============================
+class Sensor:
+    def __init__(self):
+        pass
+
+
+
+
 """ TODO: UGLY CODE
     @ Calcuate mean travel time of all types of cars between two ETC stations by:
         * mean travel time (mtt_c)
@@ -146,28 +152,24 @@ def transformFormatForOutput(data, date):
         result.append(row)
     return result
 
-def analyze(rootdir, date, save_dest):
-    data = calcDailyTravelTime(date, rootdir)
-    data = transformFormatForOutput(data, date)
-    CSVUtil.save(data, save_dest)
+def handleDirPath(rootdir):
+    data_dir = INPUT_DIR + rootdir + '/'
+    output_dir = OUTPUT_DIR + rootdir + '/'
+    if not rootdir in os.listdir(OUTPUT_DIR):
+        os.mkdir(output_dir)
 
 def run(arg):
     #slash = lambda p: os.path.join(p, "", "")
-    if arg == "batch":
-        for rootdir in listdirNoHidden(INPUT_DIR):
-            data_dir = INPUT_DIR + rootdir + '/'
-            output_dir = OUTPUT_DIR + rootdir + '/'
-            if not rootdir in os.listdir(OUTPUT_DIR):
-                os.mkdir(output_dir)
+    listDir = listdirNoHidden
 
-            for date in listdirNoHidden(data_dir):
-                save_dest = output_dir + date + ".csv"
-                analyze(rootdir, date, save_dest)
-    elif arg == "test":
-        rootdir = "201507"
-        date = "20150702"
-        save_dest = OUTPUT_DIR + date + ".csv"
-        analyze(rootdir, date, save_dest)
+    for rootdir in listDir(INPUT_DIR):
+        handleDirPath(rootdir)
+        for date in listDir(data_dir):
+            save_dest = output_dir + date + ".csv"
+            #analyze(rootdir, date, save_dest)
+            result = calcDailyTravelTime(date, rootdir)
+            result = transformFormatForOutput(result, date)
+            CSVUtil.save(result, save_dest)
 
 ### ============= End Main =======================
 
@@ -185,3 +187,8 @@ if __name__ == "__main__":
     else:
         for arg in args:
             run(arg)
+
+    rootdir = "201507"
+    date = "20150702"
+    save_dest = OUTPUT_DIR + date + ".csv"
+    analyze(rootdir, date, save_dest)
