@@ -28,12 +28,9 @@ class Sensor:
 
     def analyze(self):
         calcHour = self.calcHourlyTravelTime
-        mergeHour = self.mergeHourlyResults
-        formatOutput = self.formatForOutput
+        mergeHours = self.mergeHourlyResults
         save = self.__save
-
         inputdir = INPUT_DIR
-
         for anchor_dir in subdirs(inputdir):  # In data/
             for date in subdirs(inputdir + anchor_dir):  # In 201507/
                 os.chdir(inputdir + anchor_dir + "/" + date)
@@ -47,15 +44,14 @@ class Sensor:
                 """
                 hour_dirs = subdirs('.')
                 hourly_results = [ calcHour(hd) for hd in hour_dirs ]
-                self.__result = mergeHour(hourly_results)  # OrderedDict(list)
+                result = mergeHours(hourly_results)  # OrderedDict(list)
+                result = self.formatForOutput(date, result)
                 #-----------------------------------------------------
 
-                self.__result = formatOutput(date)
                 os.chdir('../../../')  # In data/
+                save(anchor_dir, date, result)
 
-                save(anchor_dir, date)
-
-    def __save(self, anchor_dir, date):
+    def __save(self, anchor_dir, date, data):
         if "output" not in subdirs('.'):
             os.mkdir("output")
 
@@ -65,7 +61,7 @@ class Sensor:
 
         #print("OUTPUT: {}".format(os.getcwd()))
         save_dest = "{}/{}".format(output_dir, date+".csv")
-        CSVUtil.save(self.__result, save_dest)
+        CSVUtil.save(data, save_dest)
 
 
     """  TODO: Need to optimize
@@ -76,25 +72,23 @@ class Sensor:
         }
     """
     def mergeHourlyResults(self, hourly_results):
-        result = OrderedDict()  # where the magic happens
+        daily_result = OrderedDict()  # where the magic happens
+        hourly_results = flatList(flatList(hourly_results))
 
-        for res in hourly_results:
-            for info in res:  # info: (etc_entry, etc_exit, avg_travel_time)
-                for section, avg_travel_times in info:
-                    if section not in result:
-                        result[section] = list()
-                    else:
-                        result[section].append(avg_travel_times)
-        return result
+        for section, avg_times in hourly_results:
+            if section not in daily_result:
+                daily_result[section] = list()
+            else:
+                daily_result[section].append(avg_times)
 
+        return daily_result
 
     def calcHourlyTravelTime(self, hour_dir):
         #print("HOUR_DIR: {}".format(hour_dir))
         calc = self.__calcTravelTimeOfSensorSection
         prefix = "./{}/".format(hour_dir)
-        return [ self.calc(prefix + file)
+        return [ calc(prefix + file)
                  for file in subfiles(hour_dir) ]
-
 
     """ TODO: UGLY CODE
         @ Calcuate mean travel time of all types of cars between two ETC stations by:
@@ -145,17 +139,15 @@ class Sensor:
     """
         Add attribute description and trasnform the dict into list
     """
-    def formatForOutput(self, date):
+    def formatForOutput(self, date, data):
         splitday = splitDay
         interval = TIME_INTERVAL
-        raw = self.__result
-
-        head = ["日期", "測站入口", "測站出口"]
         time_intervals = splitday(interval)
-        result.append(head + time_intervals);
+        header = ["日期", "測站入口", "測站出口"] + time_intervals
+        result = [header]
 
-        return [ [date, section.entry, section.exit] + avg_times \
-                    for section, avg_times in raw ]
+        return[ [date, section.entry, section.exit] + avg_times
+                for section, avg_times in data.items() ]
 
 
 ### ============= End Main =======================
@@ -181,6 +173,7 @@ if __name__ == "__main__":
     print (fn.__name__)
     t1 = time.clock()
     fn()
+    #myfunc()
     t2 = time.clock()
     print(round(t2-t1, 3))
 

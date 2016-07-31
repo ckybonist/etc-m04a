@@ -3,6 +3,7 @@
 
 import os
 import csv
+from itertools import chain
 from datetime import time
 from collections import namedtuple
 
@@ -99,7 +100,7 @@ def listdir(path):
     Note: Using this to avoid nested loops
 """
 def flatList(lst):
-    return list(itertools.chain.from_iterable(lst))
+    return list(chain.from_iterable(lst))  # itertools.chain
 
 def mappedList(fn, iteralbe):
     return list(map(fn, iteralbe))
