@@ -18,9 +18,10 @@ def getDistanceOfSensorSection(section):
     return abs(p_b - p_a)
 
 """
-    Generate a list like: [ "0:00", "0:05", ..., "23:55" ]
+    Split 24 hours to by given interval(minutes).
+    e.g. [ "0:00", "0:05", ..., "23:55" ]
 """
-def createSensingIntervals(interval):
+def splitDay(interval):
     NUM_HOURS = 24
     NUM_INTERVALS_EACH_HOUR = int(60 / interval)
 
@@ -38,14 +39,13 @@ def createSensingIntervals(interval):
                 break
             result.append(time(hour, minute))
 
+    return [ t.strftime("%H:%M") for t in result ]
 
-    to_str = lambda t: t.strftime("%H:%M")
-    result = list(map(to_str, result))
-    return result
 
 class CSVUtil:
     def __init__(self):
         pass
+
     """
         @fname: file name
         @deli: delimiter (default to excel)
@@ -73,6 +73,7 @@ class CSVUtil:
         if not 'output' in os.listdir('.'):
             os.mkdir('output')
         CSVUtil.write(data, dest)
+#------------- END CSVUtil ------------------
 
 
 ## Helper Functions
@@ -90,6 +91,15 @@ def listdir(path):
     for entry in os.scandir(path):
         if not entry.name.startswith('.'):
             yield entry.name
+
+"""
+    From [(1,2), (3,4)]
+    To   [1, 2, 3, 4]
+
+    Note: Using this to avoid nested loops
+"""
+def flatList(lst):
+    return list(itertools.chain.from_iterable(lst))
 
 def mappedList(fn, iteralbe):
     return list(map(fn, iteralbe))

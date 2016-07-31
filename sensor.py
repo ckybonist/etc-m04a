@@ -37,13 +37,18 @@ class Sensor:
         for anchor_dir in subdirs(inputdir):  # In data/
             for date in subdirs(inputdir + anchor_dir):  # In 201507/
                 os.chdir(inputdir + anchor_dir + "/" + date)
-                #self.__result = self.calcDailyTravelTime(anchor_dir, date)
 
-                #-------------------------
+                #--------------------------------------------------
+                """
+                    Daily Travel Time
+                        { ETC_entry, ETC_exit, 0:00, 0:05, ..., 23:55 }
+                        NOTE: "0:00" means average travel time at 0:00
+
+                """
                 hour_dirs = subdirs('.')
                 hourly_results = [ calcHour(hd) for hd in hour_dirs ]
                 self.__result = mergeHour(hourly_results)  # OrderedDict(list)
-                #-------------------------
+                #-----------------------------------------------------
 
                 self.__result = formatOutput(date)
                 os.chdir('../../../')  # In data/
@@ -62,17 +67,6 @@ class Sensor:
         save_dest = "{}/{}".format(output_dir, date+".csv")
         CSVUtil.save(self.__result, save_dest)
 
-    """
-        return result which has format like:
-            { ETC_entry, ETC_exit, 0:00, 0:05, ..., 23:55 }
-            NOTE: "0:00" means average travel time at 0:00
-
-    """
-    def calcDailyTravelTime(self):
-        hour_dirs = subdirs('.')
-        hourly_results = [ self.calcHourlyTravelTime(hd) for hd in hour_dirs ]
-
-        return self.mergeHourlyResults(hourly_results)  # OrderedDict(list)
 
     """  TODO: Need to optimize
         Merge hourly result to daily result (single dictionary)
@@ -96,9 +90,10 @@ class Sensor:
 
     def calcHourlyTravelTime(self, hour_dir):
         #print("HOUR_DIR: {}".format(hour_dir))
-        prefix = './' + hour_dir + '/'
-        return [ self.calcTravelTimeOfSensorSection(prefix + file) \
-                        for file in subfiles(hour_dir) ]
+        calc = self.__calcTravelTimeOfSensorSection
+        prefix = "./{}/".format(hour_dir)
+        return [ self.calc(prefix + file)
+                 for file in subfiles(hour_dir) ]
 
 
     """ TODO: UGLY CODE
@@ -119,12 +114,12 @@ class Sensor:
             2. ETC_section_distance(km) / 80(km/h) * 3600
             p.s.: #2 will apply when etc locations is settle down
     """
-    def calcTravelTimeOfSensorSection(self, fname):
+    def __calcTravelTimeOfSensorSection(self, fname):
         result = []
         c = 0
         weightedTime = 0
         num_cars = 0
-        calc = self.calcTime
+        calc = self.__calcTime
 
         for row in CSVUtil.read(fname):
             c += 1
@@ -136,7 +131,7 @@ class Sensor:
                 result.append((sensor_section, travel_time))
         return result
 
-    def calcTime(self, weightedTime, num_cars, sid_start, sid_end):
+    def __calcTime(self, weightedTime, num_cars, sid_start, sid_end):
         if num_cars == 0:
             start_pos = getSensorPosition(sid_start)
             end_pos = getSensorPosition(sid_end)
@@ -151,12 +146,17 @@ class Sensor:
         Add attribute description and trasnform the dict into list
     """
     def formatForOutput(self, date):
-        result = []
-        result.append(["日期", "測站入口", "測站出口"] + createSensingIntervals(TIME_INTERVAL));
-        for section, avg_travel_times in self.__result.items():
-            row = [date, section.entry, section.exit] + avg_travel_times
-            result.append(row)
-        return result
+        splitday = splitDay
+        interval = TIME_INTERVAL
+        raw = self.__result
+
+        head = ["日期", "測站入口", "測站出口"]
+        time_intervals = splitday(interval)
+        result.append(head + time_intervals);
+
+        return [ [date, section.entry, section.exit] + avg_times \
+                    for section, avg_times in raw ]
+
 
 ### ============= End Main =======================
 

@@ -6,8 +6,11 @@ from utils import *
 
 
 class Interchange:
+    # Class variables
     SENSOR_LOCATIONS = []
 
+
+    # Instance methods
     def __init__(self):
         self.path = None
         self.__data = []
@@ -18,11 +21,13 @@ class Interchange:
         Caculating travel time of each interchange section in path then sum it.
     """
     def analyze(self, paths, step1_data_path):
-        return [ self.calcTravelTimesOfPath(path, step1_data_path) for path in paths ]
+        calc = self.calcTravelTimesOfPath
+        return [ calc(path, step1_data_path)
+                 for path in paths ]
 
     def calcTravelTimesOfPath(self, path, step1_data_path):
-        self.path = path
         result = []
+        self.path = path
         direction = path[2]
         raw_data = CSVUtil.read("resource/sensor_section.example.csv")[1:]
 
@@ -42,14 +47,15 @@ class Interchange:
 
     def __getMiddleEndSubSectionTravelTime(self, routes):
         # filter the sensor sections which not in path
-        middle_times = [ d[2] for d in self.__data \
-                            for r in routes[1:-1] \
-                            if d[1] == r ]
+        middle_times = [ d[2] for d in self.__data
+                              for r in routes[1:-1]
+                              if d[1] == r ]
         # merge all sensor sections into one element
         middle_times = list(zip(*middle_times))
 
         # travel_times of path's middle part
-        middle_times = [ sumMappedList(float, times) for times in middle_times ]
+        middle_times = [ sumMappedList(float, times)
+                         for times in middle_times ]
 
         return middle_times
 
@@ -69,7 +75,10 @@ class Interchange:
     def __refineData(self, direction, raw_data):
         self.__filterDataByDirection(direction, raw_data)
         def fn(e):
-            return [ e[0], SensorSection(entry=e[1], exit=e[2]), e[3:] ]
+            return [ e[0],
+                    SensorSection(entry=e[1], exit=e[2]),
+                    e[3:] ]
+
         self.__data = [ fn(e) for e in self.__data ]
 
 
@@ -205,10 +214,10 @@ class Interchange:
 
 if __name__ == "__main__":
     from path import PATHS
-    analyzer = Interchange.analyze
-
-    result = analyze(TEST_PATH)
-
     TEST_PATH = [PATHS[3]]
+
+    run = Interchange.analyze
+    result = run(TEST_PATH)
+
     ACTUAL_TRAVEL_TIME = 738
     assert(ACTUAL_TRAVEL_TIME == result[1])  # check travel time of path-4 which starting at 00:05
