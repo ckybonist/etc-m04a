@@ -7,20 +7,21 @@ from path import PATHS
 from config import *
 
 
-
 """
     Predict travel times of paths. The whole process can be splitted
     into three steps.
 """
+
+
 def predict():
-    #step1()
+    # step1()
 
     step2 = Step2()
-    result = step2.analyze(PATHS, OUTPUT_DIR+"/step1/")
+    result = step2.analyze(PATHS, OUTPUT_DIR + "/step1/")
     print(len(result))
     print(result[3][1])
 
-    #step3()
+    # step3()
 
 
 if __name__ == "__main__":

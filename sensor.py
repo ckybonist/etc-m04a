@@ -20,9 +20,9 @@ from config import *
 from utils import *
 
 
-
-### ====================== MAIN ============================
+# ====================== MAIN ============================
 class Sensor:
+
     def __init__(self):
         self.__result = []
 
@@ -43,7 +43,7 @@ class Sensor:
 
                 """
                 hour_dirs = subdirs('.')
-                hourly_results = [ calcHour(hd) for hd in hour_dirs ]
+                hourly_results = [calcHour(hd) for hd in hour_dirs]
                 result = mergeHours(hourly_results)  # OrderedDict(list)
                 result = self.formatForOutput(date, result)
                 #-----------------------------------------------------
@@ -60,9 +60,8 @@ class Sensor:
             os.makedirs(output_dir, exist_ok=True)
 
         #print("OUTPUT: {}".format(os.getcwd()))
-        save_dest = "{}/{}".format(output_dir, date+".csv")
+        save_dest = "{}/{}".format(output_dir, date + ".csv")
         CSVUtil.save(data, save_dest)
-
 
     """  TODO: Need to optimize
         Merge hourly result to daily result (single dictionary)
@@ -71,6 +70,7 @@ class Sensor:
             ...
         }
     """
+
     def mergeHourlyResults(self, hourly_results):
         daily_result = OrderedDict()  # where the magic happens
         hourly_results = flatList(flatList(hourly_results))
@@ -87,8 +87,8 @@ class Sensor:
         #print("HOUR_DIR: {}".format(hour_dir))
         calc = self.__calcTravelTimeOfSensorSection
         prefix = "./{}/".format(hour_dir)
-        return [ calc(prefix + file)
-                 for file in subfiles(hour_dir) ]
+        return [calc(prefix + file)
+                for file in subfiles(hour_dir)]
 
     """ TODO: UGLY CODE
         @ Calcuate mean travel time of all types of cars between two ETC stations by:
@@ -108,6 +108,7 @@ class Sensor:
             2. ETC_section_distance(km) / 80(km/h) * 3600
             p.s.: #2 will apply when etc locations is settle down
     """
+
     def __calcTravelTimeOfSensorSection(self, fname):
         result = []
         c = 0
@@ -121,7 +122,8 @@ class Sensor:
             num_cars += int(row[5])
             if c > 0 and c % NUM_CAR_TYPE == 0:
                 travel_time = calc(weightedTime, num_cars, row[1], row[2])
-                sensor_section = SensorSection(entry=row[1], exit=row[2])  # magic
+                sensor_section = SensorSection(
+                    entry=row[1], exit=row[2])  # magic
                 result.append((sensor_section, travel_time))
         return result
 
@@ -134,11 +136,12 @@ class Sensor:
             distance = abs(end_pos - start_pos)
             return hour * math.floor(distance / velocity)  # second
         else:
-            return  math.floor(weightedTime / num_cars)
+            return math.floor(weightedTime / num_cars)
 
     """
         Add attribute description and trasnform the dict into list
     """
+
     def formatForOutput(self, date, data):
         splitday = splitDay
         interval = TIME_INTERVAL
@@ -146,11 +149,11 @@ class Sensor:
         header = ["日期", "測站入口", "測站出口"] + time_intervals
         result = [header]
 
-        return[ [date, section.entry, section.exit] + avg_times
-                for section, avg_times in data.items() ]
+        return[[date, section.entry, section.exit] + avg_times
+               for section, avg_times in data.items()]
 
 
-### ============= End Main =======================
+# ============= End Main =======================
 
 def test():
     from profile import timing, timing2, timing3
@@ -158,8 +161,8 @@ def test():
     #fn = step1.calcDailyTravelTime
     #fn = step1.calcHourlyTravelTime
 
-    #os.chdir("data/201507/20150702/")
-    #os.chdir("data/201507/20150702/")
+    # os.chdir("data/201507/20150702/")
+    # os.chdir("data/201507/20150702/")
 
     #timing2(fn, 1)
     #timing(fn, 72, "00")
@@ -173,7 +176,6 @@ if __name__ == "__main__":
     print (fn.__name__)
     t1 = time.clock()
     fn()
-    #myfunc()
+    # myfunc()
     t2 = time.clock()
-    print(round(t2-t1, 3))
-
+    print(round(t2 - t1, 3))

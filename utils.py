@@ -8,10 +8,14 @@ from datetime import time
 from collections import namedtuple
 
 
-SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
+SensorSection = namedtuple(
+    "SensorSection", [
+        "entry", "exit"])  # where the magic happens
+
 
 def getSensorPosition(section_id):
     return float(section_id[3:7]) / 10
+
 
 def getDistanceOfSensorSection(section):
     p_a = getSensorPosition(section[0])
@@ -22,6 +26,8 @@ def getDistanceOfSensorSection(section):
     Split 24 hours to by given interval(minutes).
     e.g. [ "0:00", "0:05", ..., "23:55" ]
 """
+
+
 def splitDay(interval):
     NUM_HOURS = 24
     NUM_INTERVALS_EACH_HOUR = int(60 / interval)
@@ -40,10 +46,11 @@ def splitDay(interval):
                 break
             result.append(time(hour, minute))
 
-    return [ t.strftime("%H:%M") for t in result ]
+    return [t.strftime("%H:%M") for t in result]
 
 
 class CSVUtil:
+
     def __init__(self):
         pass
 
@@ -53,19 +60,19 @@ class CSVUtil:
         @dialect: excel or excel-tab (default to comma)
     """
     @staticmethod
-    def read(fname, dia = 'excel', deli = ','):
+    def read(fname, dia='excel', deli=','):
         with open(fname, 'r') as f:
-            reader = csv.reader(f, dialect = dia, delimiter = deli)
-            return [ tuple(r) for r in reader ]
+            reader = csv.reader(f, dialect=dia, delimiter=deli)
+            return [tuple(r) for r in reader]
 
     """
         @data: list or something...
         @other parameters same as above
     """
     @staticmethod
-    def write(data, fname, dia = 'excel' , deli = ','):
+    def write(data, fname, dia='excel', deli=','):
         with open(fname, 'w') as f:
-            writer = csv.writer(f, dialect = dia, delimiter = deli)
+            writer = csv.writer(f, dialect=dia, delimiter=deli)
             for r in data:
                 writer.writerow(r)
 
@@ -77,16 +84,18 @@ class CSVUtil:
 #------------- END CSVUtil ------------------
 
 
-## Helper Functions
+# Helper Functions
 def subdirs(path):
     for entry in os.scandir(path):
         if not entry.name.startswith('.') and entry.is_dir():
             yield entry.name
 
+
 def subfiles(path):
     for entry in os.scandir(path):
         if not entry.name.startswith('.') and entry.is_file():
             yield entry.name
+
 
 def listdir(path):
     for entry in os.scandir(path):
@@ -99,14 +108,19 @@ def listdir(path):
 
     Note: Using this to avoid nested loops
 """
+
+
 def flatList(lst):
     return list(chain.from_iterable(lst))  # itertools.chain
+
 
 def mappedList(fn, iteralbe):
     return list(map(fn, iteralbe))
 
+
 def sumMappedList(fn, iteralbe):
     return sum(list(map(fn, iteralbe)))
+
 
 def printList(obj):
     for i, e in enumerate(obj):
@@ -116,6 +130,7 @@ def printList(obj):
             print(e)
             i += 1
 
+
 def printDict(obj):
     i = 0
     for k, v in obj.items():
@@ -123,7 +138,7 @@ def printDict(obj):
             break
         else:
             print("{} -> {}".format(k, v))
-            i+=1
+            i += 1
 
 
 if __name__ == "__main__":
