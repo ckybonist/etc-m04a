@@ -17,9 +17,6 @@ def predict():
     # step1()
 
     step2 = Step2()
-    result = step2.analyze(PATHS, OUTPUT_DIR + "/step1/")
-    print(len(result))
-    print(result[3][1])
 
     # step3()
 

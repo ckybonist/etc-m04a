@@ -109,6 +109,9 @@ def listdir(path):
     Note: Using this to avoid nested loops
 """
 
+def floatList(lst):
+    return [ float(e) for e in lst ]
+
 
 def flatList(lst):
     return list(chain.from_iterable(lst))  # itertools.chain

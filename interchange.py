@@ -7,182 +7,114 @@ from utils import *
 
 class Interchange:
     # Class variables
-    SENSOR_LOCATIONS = []
+    locations = []
 
     # Instance methods
     def __init__(self):
         self.path = None
         self.__data = []
-        self.__sensor_locations = []
-        Interchange.SENSOR_LOCATIONS = CSVUtil.read(
+        Interchange.locations = CSVUtil.read(
             "resource/etc-sensor-loc.csv")[1:]  # remove header
 
     """
-        Caculating travel time of each interchange section in path then sum it.
+        Caculating travel time of each subpath(interchange section) in path then sum it.
     """
 
-    def analyze(self, paths, step1_data_path):
-        calc = self.calcTravelTimesOfPath
-        return [calc(path, step1_data_path)
-                for path in paths]
+    def analyze(self):
+        raw = CSVUtil.read("resource/sensor_section.example.csv")
+        header = raw[0]
+        timestamps = header[3:]
+        result = [header]
+        self.__refineData(raw)
+        result = self.calcSubPathTravelTime()
 
-    def calcTravelTimesOfPath(self, path, step1_data_path):
+        for r in result:
+            print(r[2])  # 00:10
+
+
+    # BUG: Error occurs in 01F2866S (due to no this sensor record in training data)
+    def calcSubPathTravelTime(self):
+        locations = Interchange.locations
         result = []
-        self.path = path
-        direction = path[2]
-        raw_data = CSVUtil.read("resource/sensor_section.example.csv")[1:]
+        enum = enumerate(locations)
+        for idx, current in enum:
+            if current[3] == 0:  # upstream interchange's location is 0 km.
+                pass
+            else:
+                prev = locations[idx-1]
+                next = locations[idx+1]
+                section1 = SensorSection(entry=prev[0], exit=current[0])
+                section2 = SensorSection(entry=current[0], exit=next[0])
 
-        self.__refineData(direction, raw_data)
-        routes = self.__listSensorSectionsOfPath(
-            path, direction)  # sensor sections of path
+                ratio1 = self.__calcRatio(current[3], prev[-1], current[-1], upstream_interchange=True)
+                ratio2 = self.__calcRatio(current[3], current[-1], next[-1], upstream_interchange=False)
 
-        return self.__mergeTravelTimeOfSensorSections(routes)
+                calc = lambda t1, t2: ratio1 * t1 + ratio2 * t2
+                time_lst1 = self.__getSensorSectionTravelTimes(section1)
+                time_lst2 = self.__getSensorSectionTravelTimes(section2)
+                if not time_lst2:
+                    print(current)
+                times = zip(time_lst1, time_lst2)
 
-    def __mergeTravelTimeOfSensorSections(self, routes):
-        first_times, final_times = self.__getBothEndsSubSectionTravelTime(
-            routes)
-        middle_times = self.__getMiddleEndSubSectionTravelTime(routes)
-
-        result = mappedList(sum, zip(first_times, middle_times, final_times))
-        result = mappedList(round, result)
+                traveltimes = [ calc(t1, t2) for t1, t2 in times ]
+                subpath = (current[1], current[2], traveltimes)
+                result.append(subpath)
 
         return result
 
-    def __getMiddleEndSubSectionTravelTime(self, routes):
-        # filter the sensor sections which not in path
-        middle_times = [d[2] for d in self.__data
-                        for r in routes[1:-1]
-                        if d[1] == r]
-        # merge all sensor sections into one element
-        middle_times = list(zip(*middle_times))
 
-        # travel_times of path's middle part
-        middle_times = [sumMappedList(float, times)
-                        for times in middle_times]
-
-        return middle_times
 
     """
-        Refine data and sensor-locations-records:
-        For data:
-            - filter by direction
-            - merge two sensor ids into SensorSection type
-        For sensor-locations-records:
-            - filter by direction
+        Refine step1 data (output/step1/*/*.csv)
 
         Result:
-            [ Date, SensorSection, [travel_times_at_each_timestamp...] ]
+            [ Date, SensorSection(entry, exit), [t_0000, t_0005, t_0010, ..., t_2355] ]
 
         @direction: 'N' or 'S'
     """
 
-    def __refineData(self, direction, raw_data):
-        self.__filterDataByDirection(direction, raw_data)
+    def __refineData(self, raw_data):
+        def fn1(row):
+            return [row[0],
+                    SensorSection(entry=row[1], exit=row[2]),
+                    row[3:]]
+        self.__data = [fn1(r) for r in raw_data[1:]]
 
-        def fn(e):
-            return [e[0],
-                    SensorSection(entry=e[1], exit=e[2]),
-                    e[3:]]
+        def fn2(row):
+            head = list(row[0:3])
+            tail = floatList(row[3:])
+            return head + tail
+        Interchange.locations = [ fn2(r) for r in Interchange.locations ]
 
-        self.__data = [fn(e) for e in self.__data]
 
-    """ TODO: Refine code
-        記錄路徑中所有的測站區間
     """
+        將所有測站ID 轉為測站區間
+        例如：
+            原始是 ['A', 'B', 'C', 'D'] 四個測站ID
+            轉換後為 [ ('A', 'B'), ('B', 'C'), ('C', 'D') ]
+            最後再把每一個元素轉型為 SectionSensor (see config.py)
+    """
+    def __constructSSIDs(self, entry, exit):
+        ssids = [ e[0] for e in Interchange.locations ]
+        ssids = list(zip(ssids, ssids[1:]))
+        return ssids
 
-    def __listSensorSectionsOfPath(self, path, direction):
-        sections = []
-        flag = False
-        start, end = (path[0], path[1]) \
-            if direction == '南' else (path[1], path[0])
 
-        for row in self.__sensor_locations:
-            if row[2] == start:
-                flag = True
-
-            if flag:
-                sections.append(row[0])
-
-            if row[1] == end:
-                break
-        """
-            magic: 將所有測站ID 轉為測站區間
-            例如：
-                原始是 ['A', 'B', 'C', 'D'] 四個測站ID
-                轉換後為 [ ('A', 'B'), ('B', 'C'), ('C', 'D') ]
-                最後再把每一個元素轉型為 SectionSensor (see config.py)
-        """
-        sections = list(zip(sections, sections[1:]))
-        if direction == '南':
-            sections = [SensorSection(entry=x, exit=y) for x, y in sections]
+    def __calcRatio(self, loc_interchange, loc_sensor_start, loc_sensor_end, upstream_interchange=True):
+        delta = abs(loc_sensor_end - loc_sensor_start)  # distance of sensor section
+        sub_delta = 0  # distance between sensor and interchange
+        if upstream_interchange:
+            sub_delta = loc_sensor_end - loc_interchange
         else:
-            sections = [SensorSection(entry=y, exit=x) for x, y in sections]
+            sub_delta = loc_interchange - loc_sensor_start
 
-        return sections
+        return sub_delta / delta
 
-    """
-        Return travel time of first and final sub-section.
-        Sub-section means the section between interchange and sensor, so:
-            first sub-section means:
-                start point of path <---> sensor  (right hand side has larger mileage)
-            final sub-section means:
-                sensor <---> end point of path
 
-        @routes: Sensor sections of path
-    """
-
-    def __getBothEndsSubSectionTravelTime(self, routes):
-        start, end = routes[0], routes[-1]
-        first_times = self.__getSensorSectionTravelTime(start)
-        final_times = self.__getSensorSectionTravelTime(end)
-        first_prop, last_prop = self.__getBothEndsProportions(routes)
-        first_times = [float(t) * first_prop for t in first_times]
-        final_times = [float(t) * last_prop for t in final_times]
-
-        return first_times, final_times
-
-    """
-        算出路徑中第一個(最後一個)交流道 到 下一個(上一個) 測站
-        的距離在其測站區間所佔的比例 (也就是這兩個子路段所佔的比例)
-
-        @start: 起點交流道名稱
-        @end: 終點交流道名稱
-        @return: Tuple; (初始子路段比例, 最後子路段比例)
-    """
-
-    def __getBothEndsProportions(self, routes):
-        pa = self.__getFirstEndProportion(routes[0])
-        pb = self.__getFinalEndProportion(routes[-1])
-
-        return pa, pb
-
-    def __getFirstEndProportion(self, sensor_section):
-        d1 = getDistanceOfSensorSection(sensor_section)  # section distance
-
-        pos_ic = self.__findInterchangePosition(
-            self.path[0])  # start interchange position
-        pos_se = getSensorPosition(sensor_section[1])  # end sensor position
-        d2 = pos_se - pos_ic
-
-        # return round(d2 / d1, 3)  # for testing
-        return d2 / d1
-
-    def __getFinalEndProportion(self, sensor_section):
-        d1 = getDistanceOfSensorSection(sensor_section)
-
-        pos_ie = self.__findInterchangePosition(
-            self.path[1])  # end interchange postition
-        pos_ss = getSensorPosition(
-            sensor_section[0])  # starting sensor position
-        d2 = pos_ie - pos_ss
-
-        # return round(d2 / d1, 3)  # for testing
-        return d2 / d1
-
-    def __getSensorSectionTravelTime(self, section):
+    def __getSensorSectionTravelTimes(self, sensor_section):
         for row in self.__data:
-            if row[1] == section:
-                return row[2]
+            if row[1] == sensor_section:
+                return floatList(row[2])
 
     """
         Retrun location(mileage) of the interchange
@@ -190,42 +122,16 @@ class Interchange:
         @interchange: name of interchange
     """
 
-    def __findInterchangePosition(self, interchange):
-        for row in self.__sensor_locations:
+    def __findInterchangeLocation(self, interchange):
+        for row in Interchange.locations:
             try:
                 idx = row.index(interchange)
                 return float(row[idx + 2])
             except ValueError:
                 continue
 
-    def __filterDataByDirection(self, direction, raw_data):
-        def myFilter(pred, xs):
-            return [e for e in xs if pred(e, dire)]
-
-        def pred_a(e, d):
-            return e[1][-1] == d and e[2][-1] == d
-
-        def pred_b(e, d):
-            return e[0][-1] == d
-
-        result = []
-        xs = []
-        predicate = None
-        dire = 'S' if direction == "南" else 'N'
-
-        self.__data = myFilter(pred_a, raw_data)
-
-        self.__sensor_locations = myFilter(
-            pred_b, Interchange.SENSOR_LOCATIONS)
 
 
 if __name__ == "__main__":
-    from path import PATHS
-    TEST_PATH = [PATHS[3]]
-
-    run = Interchange.analyze
-    result = run(TEST_PATH)
-
-    ACTUAL_TRAVEL_TIME = 738
-    # check travel time of path-4 which starting at 00:05
-    assert(ACTUAL_TRAVEL_TIME == result[1])
+    step2 = Interchange()
+    step2.analyze()
