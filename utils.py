@@ -13,14 +13,14 @@ SensorSection = namedtuple(
         "entry", "exit"])  # where the magic happens
 
 
-def getSensorPosition(section_id):
+def getSensorLocation(section_id):
     return float(section_id[3:7]) / 10
 
 
 def getDistanceOfSensorSection(section):
-    p_a = getSensorPosition(section[0])
-    p_b = getSensorPosition(section[1])
-    return abs(p_b - p_a)
+    loc_a = getSensorLocation(section[0])
+    loc_b = getSensorLocation(section[1])
+    return abs(loc_b - loc_a)
 
 """
     Split 24 hours to by given interval(minutes).
@@ -117,8 +117,8 @@ def flatList(lst):
     return list(chain.from_iterable(lst))  # itertools.chain
 
 
-def mappedList(fn, iteralbe):
-    return list(map(fn, iteralbe))
+def mappedList(fn, *iteralbe):
+    return list(map(fn, *iteralbe))
 
 
 def sumMappedList(fn, iteralbe):

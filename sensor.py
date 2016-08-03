@@ -26,6 +26,22 @@ class Sensor:
     def __init__(self):
         self.__result = []
 
+    def test(self):
+        calcHour = self.calcHourlyTravelTime
+        mergeHours = self.mergeHourlyResults
+        save = self.__save
+        inputdir = INPUT_DIR
+        anchordir = "20160922"
+        date = "20160602"
+        path = inputdir + "{}/{}".format(anchordir, date)
+        os.chdir(path)
+        hourly_results = [calcHour(hd) for hd in subdirs(".")]
+        result = mergeHours(hourly_results)  # OrderedDict(list)
+        result = self.formatForOutput(date, result)
+        os.chdir("../../../")
+        save(anchordir, date, result)
+
+
     def analyze(self):
         calcHour = self.calcHourlyTravelTime
         mergeHours = self.mergeHourlyResults
@@ -48,7 +64,7 @@ class Sensor:
                 result = self.formatForOutput(date, result)
                 #-----------------------------------------------------
 
-                os.chdir('../../../')  # In data/
+                os.chdir("../../../")  # In data/
                 save(anchor_dir, date, result)
 
     def __save(self, anchor_dir, date, data):
@@ -129,8 +145,8 @@ class Sensor:
 
     def __calcTime(self, weightedTime, num_cars, sid_start, sid_end):
         if num_cars == 0:
-            start_pos = getSensorPosition(sid_start)
-            end_pos = getSensorPosition(sid_end)
+            start_pos = getSensorLocation(sid_start)
+            end_pos = getSensorLocation(sid_end)
             velocity = 80  # km/h
             hour = 3600
             distance = abs(end_pos - start_pos)
@@ -170,12 +186,10 @@ def test():
 
 if __name__ == "__main__":
     step1 = Sensor()
-    fn = step1.analyze
     import time
 
-    print (fn.__name__)
     t1 = time.clock()
-    fn()
+    step1.test()
     # myfunc()
     t2 = time.clock()
     print(round(t2 - t1, 3))
