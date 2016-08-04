@@ -7,7 +7,8 @@ INPUT_DIR = "data/"
 OUTPUT_DIR = "output"
 
 NUM_CAR_TYPE = 5
-TIME_INTERVAL = 5  # minutes
+TIME_INTERVAL = 5   # minutes
+DEFAULT_SPEED = 80  # km/h
 
 PATHS = [
     ("圓山", "高雄(九如路)", "南"),
@@ -35,4 +36,6 @@ PATHS = [
 IGNORE_SENSORS = [
     "05FR143N",
     "05FR113S",
+    "01F3252S",
+    "03F0498S",
 ]

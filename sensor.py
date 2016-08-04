@@ -163,10 +163,9 @@ class Sensor:
         interval = TIME_INTERVAL
         time_intervals = splitday(interval)
         header = ["日期", "測站入口", "測站出口"] + time_intervals
-        result = [header]
-
-        return[[date, section.entry, section.exit] + avg_times
-               for section, avg_times in data.items()]
+        result = [[date, section.entry, section.exit] + avg_times
+                   for section, avg_times in data.items()]
+        return [header]+result
 
 
 # ============= End Main =======================

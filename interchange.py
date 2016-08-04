@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import operator
-from itertools import groupby
+from itertools import groupby, repeat
+from functools import cmp_to_key
 from utils import *
 
 
 class Interchange:
     # Class variables
     locations = []
+    g_section = []  # for testing
 
     # Instance methods
     def __init__(self):
@@ -30,50 +31,65 @@ class Interchange:
         self.__refineData(raw)
         result = self.calcSubPathTravelTime()
 
-        #print("{} <--> {} : {}".format(result[0][0], result[0][1], result[0][:5]))
+        #print("total sensor sections: {}".foramt(len(self.__constructSSIDs())))
+        for r in result:
+            if r[0] == "中壢服務區" and r[1] == "內壢":
+                print(r[:6])
 
 
     def calcSubPathTravelTime(self):
         locations = Interchange.locations
-        for_head, for_tail = True, False
+        lackhead, lacktail = True, False
         result = []
 
-        for grp in locations:
-            SIZE = len(grp)
-            for idx, current in enumerate(grp):
-                traveltimes = []
-                myprev = grp[idx-1]
-                mynext = grp[idx+1]
 
-                if idx == 0:
-                    traveltimes = self.__calcSpecialCase(current, myprev, mynext, for_head)
-                elif idx == SIZE-1:
-                    traveltimes = self.__calcSpecialCase(current, myprev, mynext, for_tail)
+        for group in locations:
+            SIZE = len(group)
+            myprev, mynext = [], []
+            for idx, current in enumerate(group):
+                traveltimes = []
+                myprev = group[idx-1] if not idx==0 else []
+                mynext = group[idx+1] if not idx==SIZE-1 else []
+
+                if not myprev:
+                    traveltimes = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
+                elif not mynext:
+                    traveltimes = self.__calcTimesBySingleSection(current, myprev, mynext, lacktail)
                 else:
                     traveltimes = self.__calcSubPath(current, myprev, mynext)
 
-                traveltimes = mappedList(float, traveltimes)
-                result.append([current[1], current[2] + traveltimes)
+                header = [current[1], current[2], current[0][-1]]
+                traveltimes = [ round(float(time)) for time in traveltimes ]
+                result.append(header + traveltimes)
 
         return result
 
 
     def __calcSubPath(self, current, myprev, mynext):
-        cur_sensor_id = current[0]
-        prev_sensor_id = myprev[0]
-        next_sensor_id = mynext[0]
         loc_up_ic = current[3]
         loc_down_ic = current[4]
+        lackhead, lacktail = True, False
+        direction = current[0][-1]
+        result = []
 
-        head_travel_times = self.__calcHead(prev_sensor_id, cur_sensor_id, loc_up_ic)
-        tail_travel_times = self.__calcTail(cur_sensor_id, next_sensor_id, loc_down_ic)
+        head_travel_times = self.__calcHead(myprev[0], current[0], loc_up_ic)
+        tail_travel_times = self.__calcTail(current[0], mynext[0], loc_down_ic)
+        both_times = head_travel_times + tail_travel_times
 
-        if head_travel_times
+        if not head_travel_times:
+            result = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
+        elif not tail_travel_times:
+            result =  self.__calcTimesBySingleSection(current, myprev, mynext, lacktail)
+        elif not both_times:  # can't get travel times of both sensor sections
+            N = (24 * 60) / TIME_INTERVAL - 1
+            DEFAULT_TRAVLE_TIME = abs(current[4] - current[3]) / DEFAULT_SPEED
+            result = [DEFAULT_TRAVLE_TIME] * N
+        else:
+            result = mappedList(operator.add, head_travel_times, tail_travel_times)
 
-        return mappedList(operator.add, head_travel_times, tail_travel_times)
+        return result
 
-
-    def __calcSpecialCase(self, cur, myprev, mynext, lackhead=True):
+    def __calcTimesBySingleSection(self, cur, myprev, mynext, lackhead=True):
         """ Caculate travel time of interchange section in some special cases.
 
             Speical cases: For cases that lack either travel time of sensor section
@@ -98,17 +114,20 @@ class Interchange:
         loc_up_ic = cur[3]
         loc_down_ic = cur[4]
         cur_sensor_id = cur[0]
-        prev_sensor_id = myprev[0]
-        next_sensor_id = mynext[0]
+        traveltimes = []
+        ratio = self.__calcSensorRatio(loc_up_ic, loc_down_ic, cur_sensor_id)  # head ratio
 
-        travel_times = self.__calcTail(cur_sensor_id, next_sensor_id, loc_down_ic) if lackhead else \
-                       self.__calcHead(prev_sensor_id, cur_sensor_id, loc_up_ic)
+        if lackhead and mynext:
+            traveltimes = self.__calcTail(cur_sensor_id, mynext[0], loc_down_ic)
+        elif not lackhead and myprev:
+            traveltimes = self.__calcHead(myprev[0], cur_sensor_id, loc_up_ic)
+            ratio = 1 - ratio
 
-        ratio = self.__calcRatioOfSensorLoc(loc_up_ic, loc_down_ic, cur_sensor_id)  # head ratio
-        ratio = (1 - ratio) if not lackhead else ratio
+        if ratio == 0.0:
+            print("head or tail ratio is 0: {}, {}".format(cur[1], cur[2]))
 
         return [ time + time*ratio
-                 for time in travel_times ]
+                 for time in traveltimes ]
 
     def __calcHead(self, prev_sensor_id, cur_sensor_id, loc_up_ic):
         """ Caculate travel time of left-part in interchange section
@@ -121,17 +140,21 @@ class Interchange:
             Returns:
                 A list of travel time
                     or
-                -1 (if travel times of given sensor section not found)
+                Empty list
         """
-        section = SensorSection(entry=prev_sensor_id, exit=cur_sensor_id)
-        travel_times = self.__getSensorSectionTravelTimes(section)
-        if not travel_times:
-            print("Travel times of {} not found".format(section))
+        direction = cur_sensor_id[-1]
+        section = self.__createSensorSection(prev_sensor_id, cur_sensor_id)
+        traveltimes = self.__getSensorSectionTravelTimes(section)
+
+        if not traveltimes:
+            if Interchange.g_section != section:
+                Interchange.g_section = section
+                print("{},{}".format(section[0], section[1]))
             return []
+        ratio = self.__calcInterchangeRatio(loc_up_ic, section, upstream_interchange=True)
 
-        ratio = self.__calcRatioOfICLoc(loc_up_ic, section, upstream_interchange=True)
+        return [ ratio * t for t in traveltimes ]
 
-        return [ ratio * t for t in travel_times ]
 
     def __calcTail(self, cur_sensor_id, next_sensor_id, loc_down_ic):
         """ Caculate travel time of right-part in interchange section
@@ -144,17 +167,20 @@ class Interchange:
             Returns:
                 A list of travel time
                     or
-                -1 (if travel times of given sensor section not found)
+                Empty list
         """
-        section = SensorSection(entry=cur_sensor_id, exit=next_sensor_id)
-        travel_times = self.__getSensorSectionTravelTimes(section)
-        if not travel_times:
-            print("Travel times of {} not found".format(section))
+        direction = cur_sensor_id[-1]
+        section = self.__createSensorSection(cur_sensor_id, next_sensor_id)
+        traveltimes = self.__getSensorSectionTravelTimes(section)
+
+        if not traveltimes:
+            if Interchange.g_section != section:
+                Interchange.g_section = section
+                print("{},{}".format(section[0], section[1]))
             return []
+        ratio = self.__calcInterchangeRatio(loc_down_ic, section, upstream_interchange=False)
 
-        ratio = self.__calcRatioOfICLoc(loc_down_ic, section, upstream_interchange=False)
-
-        return [ ratio * t for t in travel_times ]
+        return [ ratio*time for time in traveltimes ]
 
 
     def __refineData(self, raw_data):
@@ -176,7 +202,9 @@ class Interchange:
             head = list(row[:3])
             tail = floatList(row[3:])
             return head + tail
-        Interchange.locations = [ fn2(r) for r in Interchange.locations ]
+        locations = Interchange.locations
+        locations = sorted(locations, key=lambda e: e[0][-1])
+        Interchange.locations = [ fn2(r) for r in locations ]
         self.__separateInterchange()
 
     def __separateInterchange(self):
@@ -184,7 +212,7 @@ class Interchange:
         Interchange.locations = [ list(g) for _, g in groupby(locations, lambda e: e[0][:3]) ]
 
 
-    def __constructSSIDs(self, entry, exit):
+    def __constructSSIDs(self):
         """
             將所有測站ID 轉為測站區間
             例如：
@@ -197,20 +225,25 @@ class Interchange:
         return ssids
 
 
-    def __calcRatioOfICLoc(self, loc_interchange, sensor_section, upstream_interchange=True):
-        loc_sensor_start = getSensorLocation(sensor_section[0])
-        loc_sensor_end = getSensorLocation(sensor_section[1])
-        delta = getDistanceOfSensorSection(sensor_section)
+    def __calcInterchangeRatio(self, loc_interchange, sensor_section, upstream_interchange=True):
         sub_delta = 0  # distance between sensor and interchange
+
+        direction = sensor_section[0][-1]
+        if direction == 'N':
+            sensor_section = self.__swapSensorIdsOfSection(sensor_section)
+
+        delta, loc_sensor_start, loc_sensor_end = \
+                getDistanceOfSensorSection(sensor_section)
 
         if upstream_interchange:
             sub_delta = loc_sensor_end - loc_interchange
         else:
             sub_delta = loc_interchange - loc_sensor_start
 
-        return sub_delta / delta
 
-    def __calcRatioOfSensorLoc(self, loc_up_ic, loc_down_ic, sensor_id):
+        return abs(sub_delta / delta)
+
+    def __calcSensorRatio(self, loc_up_ic, loc_down_ic, sensor_id):
         """
             Ratio between iterchange and sensor, defualt result is the ratio of
             distance between "upstream interchange" and sensor.
@@ -218,6 +251,19 @@ class Interchange:
         loc_sensor = getSensorLocation(sensor_id)
         return abs(loc_sensor - loc_up_ic) / abs(loc_down_ic - loc_up_ic)
 
+    def __createSensorSection(self, start_id, end_id):
+        dir_a, dir_b = start_id[-1], end_id[-1]
+
+        if dir_a == 'N' and dir_b == 'N':
+            return SensorSection(entry=end_id, exit=start_id)
+        elif dir_a == 'S' and dir_b == 'S':
+            return SensorSection(entry=start_id, exit=end_id)
+        else:
+            print("Error when creating section")
+
+    def __swapSensorIdsOfSection(self, section):
+        myentry, myexit = section[1], section[0]
+        return SensorSection(entry=myentry, exit=myexit)
 
 
     def __getSensorSectionTravelTimes(self, sensor_section):

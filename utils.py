@@ -20,7 +20,8 @@ def getSensorLocation(section_id):
 def getDistanceOfSensorSection(section):
     loc_a = getSensorLocation(section[0])
     loc_b = getSensorLocation(section[1])
-    return abs(loc_b - loc_a)
+    result = abs(loc_b - loc_a)
+    return (result, loc_a, loc_b)
 
 """
     Split 24 hours to by given interval(minutes).
