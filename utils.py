@@ -12,6 +12,18 @@ SensorSection = namedtuple(
     "SensorSection", [
         "entry", "exit"])  # where the magic happens
 
+def saveResult(step, anchor, filename, content):
+    from config import OUTPUT_DIR
+
+    if "output" not in subdirs('.'):
+        os.mkdir("output")
+
+    path = "{}/{}/{}".format(OUTPUT_DIR, step, anchor)
+    if path not in subdirs(OUTPUT_DIR):
+        os.makedirs(path, exist_ok=True)
+    dest = "{}/{}".format(path, filename)
+
+    CSVUtil.save(content, dest)
 
 def getSensorLocation(section_id):
     return float(section_id[3:7]) / 10
@@ -29,9 +41,9 @@ def getDistanceOfSensorSection(section):
 """
 
 
-def splitDay(interval):
+def splitDay():
     NUM_HOURS = 24
-    NUM_INTERVALS_EACH_HOUR = int(60 / interval)
+    NUM_INTERVALS_EACH_HOUR = int(60 / TIME_INTERVAL)
 
     hour = 0
     minute = 0
@@ -39,7 +51,7 @@ def splitDay(interval):
 
     for i in range(NUM_HOURS):
         for j in range(NUM_INTERVALS_EACH_HOUR):
-            minute += interval
+            minute += TIME_INTERVAL
             if minute == 60:
                 hour += 1
                 minute = 0

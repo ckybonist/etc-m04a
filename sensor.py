@@ -29,7 +29,6 @@ class Sensor:
     def test(self):
         calcHour = self.calcHourlyTravelTime
         mergeHours = self.mergeHourlyResults
-        save = self.__save
         inputdir = INPUT_DIR
         anchordir = "20160922"
         date = "20160602"
@@ -39,13 +38,12 @@ class Sensor:
         result = mergeHours(hourly_results)  # OrderedDict(list)
         result = self.formatForOutput(date, result)
         os.chdir("../../../")
-        save(anchordir, date, result)
+        saveResult("step1", anchordir, date+".csv", result)
 
 
     def analyze(self):
         calcHour = self.calcHourlyTravelTime
         mergeHours = self.mergeHourlyResults
-        save = self.__save
         inputdir = INPUT_DIR
         for anchor_dir in subdirs(inputdir):  # In data/
             for date in subdirs(inputdir + anchor_dir):  # In 201507/
@@ -65,29 +63,16 @@ class Sensor:
                 #-----------------------------------------------------
 
                 os.chdir("../../../")  # In data/
-                save(anchor_dir, date, result)
-
-    def __save(self, anchor_dir, date, data):
-        if "output" not in subdirs('.'):
-            os.mkdir("output")
-
-        output_dir = "{}/{}/{}".format(OUTPUT_DIR, "step1", anchor_dir)
-        if output_dir not in subdirs(OUTPUT_DIR):
-            os.makedirs(output_dir, exist_ok=True)
-
-        #print("OUTPUT: {}".format(os.getcwd()))
-        save_dest = "{}/{}".format(output_dir, date + ".csv")
-        CSVUtil.save(data, save_dest)
-
-    """  TODO: Need to optimize
-        Merge hourly result to daily result (single dictionary)
-        {
-            SensorSection(entry, exit) : AvergeTravelTime
-            ...
-        }
-    """
+                saveResult("step1", anchor_dir, date+".csv", result)
 
     def mergeHourlyResults(self, hourly_results):
+        """  TODO: Need to optimize
+            Merge hourly result to daily result (single dictionary)
+            {
+                SensorSection(entry, exit) : AvergeTravelTime
+                ...
+            }
+        """
         daily_result = OrderedDict()  # where the magic happens
         hourly_results = flatList(flatList(hourly_results))
 
@@ -160,12 +145,11 @@ class Sensor:
 
     def formatForOutput(self, date, data):
         splitday = splitDay
-        interval = TIME_INTERVAL
-        time_intervals = splitday(interval)
-        header = ["日期", "測站入口", "測站出口"] + time_intervals
+        time_intervals = splitday()
+        attr_info = ["日期", "測站入口", "測站出口"] + time_intervals
         result = [[date, section.entry, section.exit] + avg_times
                    for section, avg_times in data.items()]
-        return [header]+result
+        return [attr_info]+result
 
 
 # ============= End Main =======================

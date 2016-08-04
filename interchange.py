@@ -19,25 +19,22 @@ class Interchange:
         Interchange.locations = CSVUtil.read(
             "resource/mileage_location.csv")[1:]  # remove header
 
-
     def analyze(self):
         """
             Caculating travel time of each subpath(interchange section) in path then sum it.
         """
         raw = CSVUtil.read("resource/step1.example.csv")
-        header = raw[0]
-        timestamps = header[3:]
-        result = [header]
         self.__refineData(raw)
-        result = self.calcSubPathTravelTime()
 
-        #print("total sensor sections: {}".foramt(len(self.__constructSSIDs())))
-        for r in result:
-            if r[0] == "中壢服務區" and r[1] == "內壢":
-                print(r[:6])
+        # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
+        header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
+        date = raw[1][0]
 
+        result = [header] + self.calcSubPathTravelTime(date)
 
-    def calcSubPathTravelTime(self):
+        saveResult("step2", "20160922", date+".csv", result)
+
+    def calcSubPathTravelTime(self, date):
         locations = Interchange.locations
         lackhead, lacktail = True, False
         result = []
@@ -58,7 +55,7 @@ class Interchange:
                 else:
                     traveltimes = self.__calcSubPath(current, myprev, mynext)
 
-                header = [current[1], current[2], current[0][-1]]
+                header = [date, current[1], current[2], current[0][-1]]
                 traveltimes = [ round(float(time)) for time in traveltimes ]
                 result.append(header + traveltimes)
 
