@@ -1,10 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import operator
 from itertools import groupby, repeat
 from functools import cmp_to_key
+
+from config import IGNORE_SENSORS, DEFAULT_SPEED
 from utils import *
+
 
 
 class Interchange:
@@ -19,12 +23,10 @@ class Interchange:
         Interchange.locations = CSVUtil.read(
             "resource/mileage_location.csv")[1:]  # remove header
 
-    def analyze(self):
-        """
-            Caculating travel time of each subpath(interchange section) in path then sum it.
-        """
-        raw = CSVUtil.read("resource/step1.example.csv")
-        self.__refineData(raw)
+    def test(self):
+        raw = CSVUtil.read("output/step1/20160820/20150718.csv")
+        self.__formatLocations()
+        self.__formatData(raw)
 
         # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
         header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
@@ -32,13 +34,39 @@ class Interchange:
 
         result = [header] + self.calcSubPathTravelTime(date)
 
-        saveResult("step2", "20160922", date+".csv", result)
+        saveResult("step2", "testing", date+".csv", result)
+
+
+    def analyze(self):
+        """
+            Caculating travel time of each subpath(interchange section) in path then sum it.
+            01F2827N
+            01F2866N
+            01F2930N
+        """
+
+        self.__formatLocations()  # format mileage location info
+
+        for anchor in subdirs("output/step1"):
+            inputdir = "{}/{}".format("output/step1", anchor)
+            for step1file in subfiles(inputdir):
+                os.chdir(inputdir)
+
+                raw = CSVUtil.read(step1file)
+                # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
+                header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
+                date = raw[1][0]
+                self.__formatData(raw)  # format data of sensor section time
+
+                result = [header] + self.calcSubPathTravelTime(date)
+
+                os.chdir("../../../")
+                saveResult("step2", anchor, date+".csv", result)
 
     def calcSubPathTravelTime(self, date):
         locations = Interchange.locations
         lackhead, lacktail = True, False
         result = []
-
 
         for group in locations:
             SIZE = len(group)
@@ -56,7 +84,7 @@ class Interchange:
                     traveltimes = self.__calcSubPath(current, myprev, mynext)
 
                 header = [date, current[1], current[2], current[0][-1]]
-                traveltimes = [ round(float(time)) for time in traveltimes ]
+                traveltimes = [ round(float(time), 3) for time in traveltimes ]
                 result.append(header + traveltimes)
 
         return result
@@ -71,18 +99,19 @@ class Interchange:
 
         head_travel_times = self.__calcHead(myprev[0], current[0], loc_up_ic)
         tail_travel_times = self.__calcTail(current[0], mynext[0], loc_down_ic)
-        both_times = head_travel_times + tail_travel_times
 
-        if not head_travel_times:
-            result = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
-        elif not tail_travel_times:
-            result =  self.__calcTimesBySingleSection(current, myprev, mynext, lacktail)
-        elif not both_times:  # can't get travel times of both sensor sections
-            N = (24 * 60) / TIME_INTERVAL - 1
-            DEFAULT_TRAVLE_TIME = abs(current[4] - current[3]) / DEFAULT_SPEED
-            result = [DEFAULT_TRAVLE_TIME] * N
+        if not head_travel_times and not tail_travel_times:
+            traveltime = abs(current[4] - current[3]) / DEFAULT_SPEED
+            N = int((24 * 60) / TIME_INTERVAL - 1)
+            result = [traveltime] * N
+
         else:
-            result = mappedList(operator.add, head_travel_times, tail_travel_times)
+            if not head_travel_times:
+                result = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
+            elif not tail_travel_times:
+                result =  self.__calcTimesBySingleSection(current, myprev, mynext, lacktail)
+            else:
+                result = mappedList(operator.add, head_travel_times, tail_travel_times)
 
         return result
 
@@ -121,7 +150,7 @@ class Interchange:
             ratio = 1 - ratio
 
         if ratio == 0.0:
-            print("head or tail ratio is 0: {}, {}".format(cur[1], cur[2]))
+            print("head/tail ratio is 0: {}, {}, {}".format(cur[0], cur[1], cur[2]))
 
         return [ time + time*ratio
                  for time in traveltimes ]
@@ -146,11 +175,11 @@ class Interchange:
         if not traveltimes:
             if Interchange.g_section != section:
                 Interchange.g_section = section
-                print("{},{}".format(section[0], section[1]))
+                #print("{},{}".format(section[0], section[1]))
             return []
-        ratio = self.__calcInterchangeRatio(loc_up_ic, section, upstream_interchange=True)
-
-        return [ ratio * t for t in traveltimes ]
+        else:
+            ratio = self.__calcInterchangeRatio(loc_up_ic, section, upstream_interchange=True)
+            return [ ratio * t for t in traveltimes ]
 
 
     def __calcTail(self, cur_sensor_id, next_sensor_id, loc_down_ic):
@@ -173,14 +202,14 @@ class Interchange:
         if not traveltimes:
             if Interchange.g_section != section:
                 Interchange.g_section = section
-                print("{},{}".format(section[0], section[1]))
+                #print("{},{}".format(section[0], section[1]))
             return []
-        ratio = self.__calcInterchangeRatio(loc_down_ic, section, upstream_interchange=False)
+        else:
+            ratio = self.__calcInterchangeRatio(loc_down_ic, section, upstream_interchange=False)
+            return [ ratio*time for time in traveltimes ]
 
-        return [ ratio*time for time in traveltimes ]
 
-
-    def __refineData(self, raw_data):
+    def __formatData(self, raw_data):
         """
             Refine step1 data (output/step1/*/*.csv)
 
@@ -189,27 +218,31 @@ class Interchange:
 
             @direction: 'N' or 'S'
         """
-        def fn1(row):
+        def fn(row):
             return [row[0],
                     SensorSection(entry=row[1], exit=row[2]),
                     row[3:]]
-        self.__data = [fn1(r) for r in raw_data[1:]]
 
-        def fn2(row):
+        ignoring = IGNORE_SENSORS
+        self.__data = [fn(row) for row in raw_data[1:]]
+
+    def __formatLocations(self):
+        def fn(row):
             head = list(row[:3])
             tail = floatList(row[3:])
             return head + tail
         locations = Interchange.locations
         locations = sorted(locations, key=lambda e: e[0][-1])
-        Interchange.locations = [ fn2(r) for r in locations ]
+        Interchange.locations = [ fn(row) for row in locations ]
         self.__separateInterchange()
+
 
     def __separateInterchange(self):
         locations = Interchange.locations
         Interchange.locations = [ list(g) for _, g in groupby(locations, lambda e: e[0][:3]) ]
 
 
-    def __constructSSIDs(self):
+    def __glueSSIDs(self):
         """
             將所有測站ID 轉為測站區間
             例如：
@@ -288,5 +321,13 @@ class Interchange:
 
 
 if __name__ == "__main__":
+    import time
     step2 = Interchange()
+
+    t1 = time.clock()
+
     step2.analyze()
+    #step2.test()
+
+    t2 = time.clock()
+    print(round(t2 - t1, 3))

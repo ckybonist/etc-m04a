@@ -44,10 +44,10 @@ class Sensor:
     def analyze(self):
         calcHour = self.calcHourlyTravelTime
         mergeHours = self.mergeHourlyResults
-        inputdir = INPUT_DIR
-        for anchor_dir in subdirs(inputdir):  # In data/
-            for date in subdirs(inputdir + anchor_dir):  # In 201507/
-                os.chdir(inputdir + anchor_dir + "/" + date)
+        for anchor_dir in subdirs(INPUT_DIR):  # In data/
+            inputdir = "{}/{}".format(INPUT_DIR, anchor_dir)
+            for date in subdirs(inputdir):  # In 201507/
+                os.chdir(inputdir + "/" + date)
 
                 #--------------------------------------------------
                 """
@@ -56,8 +56,7 @@ class Sensor:
                         NOTE: "0:00" means average travel time at 0:00
 
                 """
-                hour_dirs = subdirs('.')
-                hourly_results = [calcHour(hd) for hd in hour_dirs]
+                hourly_results = [calcHour(hd) for hd in subdirs(".")]
                 result = mergeHours(hourly_results)  # OrderedDict(list)
                 result = self.formatForOutput(date, result)
                 #-----------------------------------------------------
@@ -118,14 +117,17 @@ class Sensor:
         calc = self.__calcTime
 
         for row in CSVUtil.read(fname):
-            c += 1
-            weightedTime += int(row[4]) * int(row[5])
-            num_cars += int(row[5])
-            if c > 0 and c % NUM_CAR_TYPE == 0:
-                travel_time = calc(weightedTime, num_cars, row[1], row[2])
-                sensor_section = SensorSection(
-                    entry=row[1], exit=row[2])  # magic
-                result.append((sensor_section, travel_time))
+            if row[1] in IGNORE_SENSORS or row[2] in IGNORE_SENSORS:
+                continue
+            else:
+                c += 1
+                weightedTime += int(row[4]) * int(row[5])
+                num_cars += int(row[5])
+                if c > 0 and c % NUM_CAR_TYPE == 0:
+                    travel_time = calc(weightedTime, num_cars, row[1], row[2])
+                    sensor_section = SensorSection(
+                        entry=row[1], exit=row[2])  # magic
+                    result.append((sensor_section, travel_time))
         return result
 
     def __calcTime(self, weightedTime, num_cars, sid_start, sid_end):
@@ -168,11 +170,11 @@ def test():
 
 
 if __name__ == "__main__":
-    step1 = Sensor()
     import time
+    step1 = Sensor()
 
     t1 = time.clock()
-    step1.test()
+    step1.analyze()
     # myfunc()
     t2 = time.clock()
     print(round(t2 - t1, 3))

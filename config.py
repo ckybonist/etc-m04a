@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 
 FILE_EXT = ".csv"
-INPUT_DIR = "data/"
+INPUT_DIR = "data"
 OUTPUT_DIR = "output"
 
 NUM_CAR_TYPE = 5
@@ -38,4 +38,6 @@ IGNORE_SENSORS = [
     "05FR113S",
     "01F3252S",
     "03F0498S",
+    "03F2447S",
+    "03F2447N",
 ]

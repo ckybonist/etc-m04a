@@ -6,6 +6,7 @@ import csv
 from itertools import chain
 from datetime import time
 from collections import namedtuple
+from config import TIME_INTERVAL
 
 
 SensorSection = namedtuple(
