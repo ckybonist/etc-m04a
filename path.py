@@ -10,7 +10,7 @@ class Path:
     targets = []  # target paths
 
     def __init__(self):
-        self.__data = []  # travel times of interchange sections
+        self.__DATA = []  # travel times of interchange sections
         self.__data_header = []
         self.__DATE = ""
 
@@ -28,24 +28,58 @@ class Path:
         for target in Path.targets:
             direction = target[2]
             mydata = self.__filterDataByDirection(direction)
-            start, end = target[0], target[1]
-            if direction == "N":
-                start, end = target[1], target[0]
-            print(start, end, direction)
-            self.__indexOfElement(start, direction, mydata, is_start=True)
-            #print(start_at, end_at)
+            path = self.__setPath(target[0], target[1], direction)
+            start_at = self.__indexOfStartEnd(path, "start", direction, mydata)
+            end_at = self.__indexOfStartEnd(path, "end", direction, mydata)
+            #self.__debugInterchangesOfPath(path, direction, start_at, end_at, mydata)
+            traveltimes = self.__mergeTravelTimes(mydata[start_at : end_at+1])
 
-    def __indexOfElement(self, interchange, direction, data, is_start=True):
-        def predicate(row):
-            idx_ic = 1 if is_start else 2
+    def __mergeTravelTimes(self, data):  # TODO
+        result = 0.0
+        TIMESTAMPS = self.__data_header[4:]
+
+        for row in data:
+            traveltimes = row[4:]
+
+        return result
+
+    def __setPath(self, start, end, direction):
+        if direction == "N" :
+            start, end = end, start
+        return (start, end)
+
+    def __indexOfStartEnd(self, path, flag, direction, data):
+        start, end = path
+
+        def pred_x(row):  # match start/end point of path in data
+            idx_ic = 1 if flag=="start" else 2
+            interchange = start if flag=="start" else end
             return interchange == row[idx_ic] and direction == row[3]
 
-        tmp = [ idx for idx, row in enumerate(data) if predicate(row) ]
-        print(tmp)
+        def pred_y(idx):  # filter out the interchange which not in path
+            if path == ("南港系統", "蘇澳") and flag == "start":  # TODO: 南北向可能有分
+                return data[idx][2] == "石碇"
+            elif path == ("圓山", "新竹系統") and flag == "end":
+                return data[idx][1] == "新竹(園區二路)"
+            else:
+                return True
+
+        index = [ idx for idx, row in enumerate(data) \
+                    if pred_x(row) and pred_y(idx) ]
+
+        if len(index) > 1:
+            print("Error: we should only have one start or end point")
+            print(index)
+            sys.exit(1)
+        else:
+            index = index[0]
+
+        return index
+
 
     def __filterDataByDirection(self, direction):
         predicate = lambda r: r[3] == direction
-        return [row for row in self.__data if predicate(row)]
+        return [row for row in self.__DATA if predicate(row)]
 
     def __readData(self, step2_output_dir):
         #def fn(row):
@@ -58,10 +92,20 @@ class Path:
         data = CSVUtil.read(step2_output_dir)
         self.__DATE = data[1][0]
         self.__data_header = data[0]
-        self.__data = data[1:]
+        self.__DATA = data[1:]
         Path.targets = MYPATHS
-        #self.__data = [fn(row) for row in data[1:]]
+        #self.__DATA = [fn(row) for row in data[1:]]
         #Path.targets = [ fn(row) for row in MYPATHS ]
+
+    def __debugInterchangesOfPath(self, path, direction, start_at, end_at, mydata):
+        print("===========================")
+        print(path, direction)
+        print("{}, {}".format(start_at, end_at))
+        ia, ib = start_at, end_at
+        print("{}, {}".format(mydata[ia][1], mydata[ia][2]), mydata[ia][3])
+        print("{}, {}".format(mydata[ib][1], mydata[ib][2]), mydata[ia][3])
+        print("===========================\n")
+
 
 # End of Path
 
