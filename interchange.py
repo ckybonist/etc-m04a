@@ -76,6 +76,7 @@ class Interchange:
                 myprev = group[idx-1] if not idx==0 else []
                 mynext = group[idx+1] if not idx==SIZE-1 else []
 
+
                 if not myprev:
                     traveltimes = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
                 elif not mynext:
@@ -84,7 +85,7 @@ class Interchange:
                     traveltimes = self.__calcSubPath(current, myprev, mynext)
 
                 header = [date, current[1], current[2], current[0][-1]]
-                traveltimes = [ round(float(time), 3) for time in traveltimes ]
+                traveltimes = [ round(float(time)) for time in traveltimes ]
                 result.append(header + traveltimes)
 
         return result
@@ -101,10 +102,7 @@ class Interchange:
         tail_travel_times = self.__calcTail(current[0], mynext[0], loc_down_ic)
 
         if not head_travel_times and not tail_travel_times:
-            traveltime = abs(current[4] - current[3]) / DEFAULT_SPEED
-            N = int((24 * 60) / TIME_INTERVAL - 1)
-            result = [traveltime] * N
-
+            result = self.__calcDefaultTime(current)
         else:
             if not head_travel_times:
                 result = self.__calcTimesBySingleSection(current, myprev, mynext, lackhead)
@@ -114,6 +112,12 @@ class Interchange:
                 result = mappedList(operator.add, head_travel_times, tail_travel_times)
 
         return result
+
+    def __calcDefaultTime(self, cur):
+        traveltime = abs(cur[4] - cur[3]) / DEFAULT_SPEED  # divide by 80 km/h
+        traveltime = traveltime * 3600  # hour to second
+        N = int((24 * 60) / TIME_INTERVAL - 1)
+        return [traveltime] * N
 
     def __calcTimesBySingleSection(self, cur, myprev, mynext, lackhead=True):
         """ Caculate travel time of interchange section in some special cases.
@@ -140,8 +144,8 @@ class Interchange:
         loc_up_ic = cur[3]
         loc_down_ic = cur[4]
         cur_sensor_id = cur[0]
-        traveltimes = []
         ratio = self.__calcSensorRatio(loc_up_ic, loc_down_ic, cur_sensor_id)  # head ratio
+        traveltimes = []
 
         if lackhead and mynext:
             traveltimes = self.__calcTail(cur_sensor_id, mynext[0], loc_down_ic)
@@ -149,11 +153,15 @@ class Interchange:
             traveltimes = self.__calcHead(myprev[0], cur_sensor_id, loc_up_ic)
             ratio = 1 - ratio
 
-        if ratio == 0.0:
-            print("head/tail ratio is 0: {}, {}, {}".format(cur[0], cur[1], cur[2]))
+        if not traveltimes:
+            traveltimes = self.__calcDefaultTime(cur)
+        else:
+            traveltimes = [ time + time*ratio for time in traveltimes ]
 
-        return [ time + time*ratio
-                 for time in traveltimes ]
+        #if ratio == 0.0:
+            #print("head/tail ratio is 0: {}, {}, {}".format(cur[0], cur[1], cur[2]))
+
+        return traveltimes
 
     def __calcHead(self, prev_sensor_id, cur_sensor_id, loc_up_ic):
         """ Caculate travel time of left-part in interchange section
