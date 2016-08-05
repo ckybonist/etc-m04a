@@ -9,9 +9,8 @@ from collections import namedtuple
 from config import TIME_INTERVAL
 
 
-SensorSection = namedtuple(
-    "SensorSection", [
-        "entry", "exit"])  # where the magic happens
+SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
+InterchangeSection = namedtuple("InterchangeSection", ["upstream", "downstream"])  # where the magic happens
 
 def saveResult(step, anchor, filename, content):
     from config import OUTPUT_DIR
@@ -75,9 +74,9 @@ class CSVUtil:
     """
     @staticmethod
     def read(fname, dia='excel', deli=','):
-        with open(fname, 'r') as f:
+        with open(fname, 'r', encoding='utf8') as f:
             reader = csv.reader(f, dialect=dia, delimiter=deli)
-            return [tuple(r) for r in reader]
+            return [tuple(row) for row in reader]
 
     """
         @data: list or something...
@@ -85,7 +84,7 @@ class CSVUtil:
     """
     @staticmethod
     def write(data, fname, dia='excel', deli=','):
-        with open(fname, 'w') as f:
+        with open(fname, 'w', encoding='utf8', newline='') as f:
             writer = csv.writer(f, dialect=dia, delimiter=deli)
             for r in data:
                 writer.writerow(r)

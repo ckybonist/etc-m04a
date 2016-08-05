@@ -55,6 +55,7 @@ class Interchange:
                 raw = CSVUtil.read(step1file)
                 # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
                 header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
+                print(raw[2])
                 date = raw[1][0]
                 self.__formatData(raw)  # format data of sensor section time
 

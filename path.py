@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from config import MYPATHS
+from utils import CSVUtil
+
+
 class Path:
     def __init__(self):
-        pass
+        self.__data = []
 
-    def calcTravelTimesOfPath(self, path, step1_data_path):
+    def test(self):
+        anchor = "20160820"
+        myfile = "20150718.csv"
+        path = "{}/{}/{}".format("output/step2", anchor, myfile)
+        self.__data = CSVUtil.read(path)
+        for row in self.__data:
+            print(row)
+
+    def calcTravelTimes(self, path, step1_data_path):
         self.path = path
         direction = path[2]
         raw_data = CSVUtil.read("resource/sensor_section.example.csv")[1:]
 
         self.__refineData(direction, raw_data)
-        routes = self.__listSensorSectionsOfPath(
-            path, direction)  # sensor sections of path
-
-        pass
+        routes = self.__listSensorSectionsOfPath(path, direction)  # sensor sections of path
 
     """ TODO: Refine code
         記錄路徑中所有的測站區間
     """
-    def __listSensorSectionsOfPath(self, path, direction):
+    def __listSectionsOfPath(self, path, direction):
         sections = []
         flag = False
-        start, end = (path[0], path[1]) if direction == '南'
+        start, end = (path[0], path[1]) if direction == '南' \
                                         else (path[1], path[0])
 
         for row in self.__sensor_locations:
@@ -69,26 +78,12 @@ class Path:
         self.__sensor_locations = myFilter(
             pred_b, Interchange.SENSOR_LOCATIONS)
 
-    """
-        Refine data and sensor-locations-records:
-        For data:
-            - filter by direction
-            - merge two sensor ids into SensorSection type
-        For sensor-locations-records:
-            - filter by direction
-
-        Result:
-            [ Date, SensorSection, [travel_times_at_each_timestamp...] ]
-
-        @direction: 'N' or 'S'
-    """
-
-    def __refineData(self, direction, raw_data):
+    def __formatData(self, direction, raw_data):
         self.__filterDataByDirection(direction, raw_data)
 
         def fn(e):
             return [e[0],
-                    SensorSection(entry=e[1], exit=e[2]),
+                    InterchangeSection(upstream=e[1], downstream=e[2]),
                     e[3:]]
 
         self.__data = [fn(e) for e in self.__data]
@@ -96,4 +91,5 @@ class Path:
 # End of Path
 
 if __name__ == "__main__":
-    pass
+    step3 = Path()
+    step3.test()
