@@ -1,9 +1,9 @@
 # ETC M04A 程式 (開發中，說明將隨之變動...)
 
 
-# 必要準備
-- 安裝 [python3.5](https://www.python.org/downloads/)
-- 安裝 [git](https://git-scm.com/download/win) (optional)
+# 需要的工具
+- [python3.5](https://www.python.org/downloads/)
+- [git](https://git-scm.com/download/win) (optional)
 - TODO
 
 
