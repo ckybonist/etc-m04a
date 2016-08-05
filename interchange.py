@@ -20,19 +20,17 @@ class Interchange:
     def __init__(self):
         self.path = None
         self.__data = []
+        self.__data_header = []
+        self.__date = ""
         Interchange.locations = CSVUtil.read(
             "resource/mileage_location.csv")[1:]  # remove header
 
     def test(self):
         raw = CSVUtil.read("output/step1/20160820/20150718.csv")
-        self.__formatLocations()
-        self.__formatData(raw)
+        self.__readLocations()
+        self.__readData("output/step1/20160820/20150718.csv")
 
-        # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
-        header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
-        date = raw[1][0]
-
-        result = [header] + self.calcSubPathTravelTime(date)
+        result = [self.__data_header] + self.calcSubPathTravelTime(self.__date)
 
         saveResult("step2", "testing", date+".csv", result)
 
@@ -45,24 +43,19 @@ class Interchange:
             01F2930N
         """
 
-        self.__formatLocations()  # format mileage location info
+        self.__readLocations()  # format mileage location info
 
         for anchor in subdirs("output/step1"):
             inputdir = "{}/{}".format("output/step1", anchor)
-            for step1file in subfiles(inputdir):
+            for filename in subfiles(inputdir):
                 os.chdir(inputdir)
 
-                raw = CSVUtil.read(step1file)
-                # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
-                header = [raw[0][0], "上游交流道", "下游交流道", "方向"] + list(raw[0][3:])
-                print(raw[2])
-                date = raw[1][0]
-                self.__formatData(raw)  # format data of sensor section time
+                self.__readData(filename)  # format data of sensor section time
 
-                result = [header] + self.calcSubPathTravelTime(date)
+                result = [self.__data_header] + self.calcSubPathTravelTime(self.__date)
 
                 os.chdir("../../../")
-                saveResult("step2", anchor, date+".csv", result)
+                saveResult("step2", anchor, self.__date+".csv", result)
 
     def calcSubPathTravelTime(self, date):
         locations = Interchange.locations
@@ -218,7 +211,7 @@ class Interchange:
             return [ ratio*time for time in traveltimes ]
 
 
-    def __formatData(self, raw_data):
+    def __readData(self, filename):
         """
             Refine step1 data (output/step1/*/*.csv)
 
@@ -232,10 +225,13 @@ class Interchange:
                     SensorSection(entry=row[1], exit=row[2]),
                     row[3:]]
 
-        ignoring = IGNORE_SENSORS
-        self.__data = [fn(row) for row in raw_data[1:]]
+        data = CSVUtil.read(filename)
+        # 日期, ..., 方向, 00:00, 00:05, ..., 23:55
+        self.__data_header = [data[0][0], "上游交流道", "下游交流道", "方向"] + list(data[0][3:])
+        self.__date = data[1][0]
+        self.__data = [fn(row) for row in data[1:]]
 
-    def __formatLocations(self):
+    def __readLocations(self):
         def fn(row):
             head = list(row[:3])
             tail = floatList(row[3:])

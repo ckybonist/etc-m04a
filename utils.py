@@ -10,7 +10,7 @@ from config import TIME_INTERVAL
 
 
 SensorSection = namedtuple("SensorSection", ["entry", "exit"])  # where the magic happens
-InterchangeSection = namedtuple("InterchangeSection", ["upstream", "downstream"])  # where the magic happens
+InterchangeSection = namedtuple("InterchangeSection", ["start", "dest"])  # where the magic happens
 
 def saveResult(step, anchor, filename, content):
     from config import OUTPUT_DIR
