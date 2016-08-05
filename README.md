@@ -2,8 +2,8 @@
 
 
 # 必要準備
-- 安裝 python3.5
-- 安裝 git (optional)
+- 安裝 [python3.5](https://www.python.org/downloads/)
+- 安裝 [git](https://git-scm.com/download/win) (optional)
 - TODO
 
 
