@@ -324,8 +324,8 @@ if __name__ == "__main__":
 
     t1 = time.clock()
 
-    #step2.analyze()
-    step2.test()
+    step2.analyze()
+    #step2.test()
 
     t2 = time.clock()
     print(round(t2 - t1, 3))

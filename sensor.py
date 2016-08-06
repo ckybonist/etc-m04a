@@ -177,7 +177,7 @@ if __name__ == "__main__":
     step1 = Sensor()
 
     t1 = time.clock()
-    #step1.analyze()
-    step1.test()
+    step1.analyze()
+    #step1.test()
     t2 = time.clock()
     print(round(t2 - t1, 3))

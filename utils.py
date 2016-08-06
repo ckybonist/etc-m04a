@@ -101,7 +101,7 @@ def strToDatetimeObj(datestr, timestr):
     return datetime.datetime.strptime(mystr, "%Y%m%d_%H:%M")
 
 def timeDelta(delta, dt_type):
-    if dt_type == "s":
+    if dt_type == "seconds":
         return datetime.timedelta(seconds = delta)
 
 # General helper functions
