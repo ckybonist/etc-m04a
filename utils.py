@@ -3,6 +3,7 @@
 
 import os
 import csv
+import datetime
 from itertools import chain
 from datetime import time
 from collections import namedtuple
@@ -35,13 +36,11 @@ def getDistanceOfSensorSection(section):
     result = abs(loc_b - loc_a)
     return (result, loc_a, loc_b)
 
-"""
-    Split 24 hours to by given interval(minutes).
-    e.g. [ "0:00", "0:05", ..., "23:55" ]
-"""
-
-
 def splitDay():
+    """
+        Split 24 hours to by given interval(minutes).
+        e.g. [ "0:00", "0:05", ..., "23:55" ]
+    """
     NUM_HOURS = 24
     NUM_INTERVALS_EACH_HOUR = int(60 / TIME_INTERVAL)
 
@@ -96,8 +95,16 @@ class CSVUtil:
         CSVUtil.write(data, dest)
 #------------- END CSVUtil ------------------
 
+# Datetime helper functions
+def strToDatetimeObj(datestr, timestr):
+    mystr = "{}_{}".format(datestr, timestr)
+    return datetime.datetime.strptime(mystr, "%Y%m%d_%H:%M")
 
-# Helper Functions
+def timeDelta(delta, dt_type):
+    if dt_type == "s":
+        return datetime.timedelta(seconds = delta)
+
+# General helper functions
 def subdirs(path):
     for entry in os.scandir(path):
         if not entry.name.startswith('.') and entry.is_dir():
