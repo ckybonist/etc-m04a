@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
+
 from config import MYPATHS
-from utils import CSVUtil, InterchangeSection
+from utils import *
 
 
 class Path:
@@ -15,7 +16,7 @@ class Path:
         self.__DATE = ""
 
     def test(self):
-        anchor = "20160820"
+        anchor = "testing"
         myfile = "20150718.csv"
         step2_dir = "{}/{}/{}".format("output/step2", anchor, myfile)
         self.__readData(step2_dir)
@@ -36,9 +37,12 @@ class Path:
 
     def __mergeTravelTimes(self, data):  # TODO
         result = 0.0
+        datestr = self.__DATE
         TIMESTAMPS = self.__data_header[4:]
+        TIMESTAMPS = [strToDatetimeObj(datestr, timestr) \
+                        for timestr in TIMESTAMPS]
 
-        for row in data:
+        for ia, row in enumerate(data):  # each interchange section
             traveltimes = row[4:]
 
         return result
@@ -57,7 +61,7 @@ class Path:
             return interchange == row[idx_ic] and direction == row[3]
 
         def pred_y(idx):  # filter out the interchange which not in path
-            if path == ("南港系統", "蘇澳") and flag == "start":  # TODO: 南北向可能有分
+            if path == ("南港系統", "蘇澳") and flag == "start":
                 return data[idx][2] == "石碇"
             elif path == ("圓山", "新竹系統") and flag == "end":
                 return data[idx][1] == "新竹(園區二路)"

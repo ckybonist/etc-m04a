@@ -26,13 +26,12 @@ class Interchange:
             "resource/mileage_location.csv")[1:]  # remove header
 
     def test(self):
-        raw = CSVUtil.read("output/step1/20160820/20150718.csv")
         self.__readLocations()
-        self.__readData("output/step1/20160820/20150718.csv")
+        self.__readData("output/step1/testing/20150718.csv")
 
         result = [self.__data_header] + self.calcSubPathTravelTime(self.__date)
 
-        saveResult("step2", "testing", date+".csv", result)
+        saveResult("step2", "testing", self.__date+".csv", result)
 
 
     def analyze(self):
@@ -110,7 +109,7 @@ class Interchange:
     def __calcDefaultTime(self, cur):
         traveltime = abs(cur[4] - cur[3]) / DEFAULT_SPEED  # divide by 80 km/h
         traveltime = traveltime * 3600  # hour to second
-        N = int((24 * 60) / TIME_INTERVAL - 1)
+        N = int((24 * 60) / TIME_INTERVAL)
         return [traveltime] * N
 
     def __calcTimesBySingleSection(self, cur, myprev, mynext, lackhead=True):
@@ -175,9 +174,6 @@ class Interchange:
         traveltimes = self.__getSensorSectionTravelTimes(section)
 
         if not traveltimes:
-            if Interchange.g_section != section:
-                Interchange.g_section = section
-                #print("{},{}".format(section[0], section[1]))
             return []
         else:
             ratio = self.__calcInterchangeRatio(loc_up_ic, section, upstream_interchange=True)
@@ -202,9 +198,6 @@ class Interchange:
         traveltimes = self.__getSensorSectionTravelTimes(section)
 
         if not traveltimes:
-            if Interchange.g_section != section:
-                Interchange.g_section = section
-                #print("{},{}".format(section[0], section[1]))
             return []
         else:
             ratio = self.__calcInterchangeRatio(loc_down_ic, section, upstream_interchange=False)
@@ -331,8 +324,8 @@ if __name__ == "__main__":
 
     t1 = time.clock()
 
-    step2.analyze()
-    #step2.test()
+    #step2.analyze()
+    step2.test()
 
     t2 = time.clock()
     print(round(t2 - t1, 3))
