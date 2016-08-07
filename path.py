@@ -50,7 +50,7 @@ class Path:
             #print("================")
             #print(target[0], target[1])
             traveltimes = self.__mergeTravelTimesOfPath(direction, target)
-            row = list(target)
+            row = [self.__DATE] + list(target)
             row.extend(traveltimes)
             result.append(row)
         return result
