@@ -3,10 +3,10 @@
 
 import sys
 import time as systime
-from datetime import datetime
+import datetime
 from collections import defaultdict
 
-from config import MYPATHS
+from config import MYPATHS, MISSING_TOMORROW
 from utils import *
 
 
@@ -15,11 +15,12 @@ class Path:
 
     def __init__(self):
         self.__DATE = ""
-        self.__DATA = []  # travel times of interchange sections
+        self.__DATA = []  # step2 data
+        self.__NEXTDAY_DATA = []  # step2 data
         self.__DATA_HEADER = []
         self.__TIMESTAMPS = []
         self.__ANCHOR_TABLE = defaultdict()  # key: day, value: anchor
-        self.__generateAnchorTable("output/step2/")  # last slash can't omit
+        self.__generateAnchorTable("output/step2/")  # do not omit last slash
 
     def test(self):
         anchor = "20160820"
@@ -33,6 +34,8 @@ class Path:
         for anchor in subdirs(rootdir):
             subdir = rootdir + anchor
             for myfile in subfiles(subdir):
+                if myfile in MISSING_TOMORROW:
+                    continue
                 print(myfile)
                 data_path = "{}/{}".format(subdir, myfile)
                 self.__readData(data_path)
@@ -42,22 +45,19 @@ class Path:
     def calcTravelTimes(self):
         """ Caculate travel times of all paths """
         result = [self.__DATA_HEADER]
-        for path in Path.targets:
-            direction = path[2]
+        for target in Path.targets:
+            direction = target[2]
             #print("================")
             #print(target[0], target[1])
-            t1 = systime.clock()
-            traveltimes = self.__mergeTravelTimesOfPath(direction, path)
-            t2 = systime.clock()
-            print("exec time of mergeTravelTimes: {}".format(round(t2-t1,3)))
-            row = list(path)
+            traveltimes = self.__mergeTravelTimesOfPath(direction, target)
+            row = list(target)
             row.extend(traveltimes)
             result.append(row)
         return result
 
-    def __mergeTravelTimesOfPath(self, direction, path):  # TODO: too slow
+    def __mergeTravelTimesOfPath(self, direction, target_path):  # TODO: too slow
         """ Return list of path travel times which start at each timestamp """
-        data = self.__getPathDataOnly(path, direction)
+        data = self.__filterData(target_path, direction, is_tomorrow=False)
         result = []
 
         def calcTimeForEachTimestamp(time_idx, timestamp):
@@ -73,10 +73,10 @@ class Path:
                     minute = cur_time.minute - (cur_time.minute % TIME_INTERVAL)  # e.g. 43 to 40
                     dt = cur_time
                     dt = dt.replace(minute = minute, second = 0)
-                    self.__updateTimeStamps(dt.date())
-                    time_idx = self.__TIMESTAMPS.index(dt)
-                    if cur_time.date() > timestamp.date():
-                        traveltimes = self.__getTimesOfIcsInDate(cur_time.date(), subpath[1:4])
+                    if cur_time.date() > timestamp.date():  # next day
+                        traveltimes = self.__getTomorrowTravelTimes(target_path, subpath[1:4])
+                    time_idx = self.__getIndexOfTime(dt)
+                    #time_idx = self.__TIMESTAMPS.index(dt)
                 result_time += int(traveltimes[time_idx])
             return result_time
 
@@ -84,26 +84,33 @@ class Path:
                     for idx, timestamp in enumerate(self.__TIMESTAMPS)]
         return result
 
+    def __getIndexOfTime(self, cur_time):
+        hour = int(cur_time.hour)
+        minute = int(cur_time.minute)
+        intervals_in_hour = 60 / TIME_INTERVAL
+        result = hour * intervals_in_hour + (minute / TIME_INTERVAL + 1)
+        return int(result) - 1
 
-    def __getTimesOfIcsInDate(self, date, target):
+    def __getTomorrowTravelTimes(self, target_path, subpath):
         """ Return travel of specific interchange section in record of given date
 
             Args:
                 @date: datetime.date object; the date of record(data)
-                @target: (upstream_interchange, downstream_interchange, direction)
+                @subpath: (upstream_interchange, downstream_interchange, direction)
 
             Note: Ics(ICS) is short for InterChangeSection
         """
-        filename = date.strftime("%Y%m%d") + ".csv"
-        anchor = self.__ANCHOR_TABLE[filename]
-        path = "output/step2/{}/{}".format(anchor, filename)
-        direction = target[-1]
-        data = self.__filterDataByDirection(direction, CSVUtil.read(path)[1:])
-        traveltimes = next(row for row in data if row[1:4] == target)[4:]
+        direction = subpath[2]
+        data = self.__filterData(target_path, direction, is_tomorrow=True)
+        traveltimes = next(row for row in data if row[1:4] == subpath)[4:]
         return traveltimes
 
-    def __getPathDataOnly(self, target, direction):
-        data = self.__filterDataByDirection(direction, self.__DATA)
+    def __filterData(self, target, direction, is_tomorrow=False):
+        raw_data = self.__DATA
+        if is_tomorrow:
+            raw_data = self.__NEXTDAY_DATA
+
+        data = self.__filterDataByDirection(direction, raw_data)
         path = self.__setPath(target[0], target[1], direction)
         start_at = self.__indexOfStartEnd(path, "start", direction, data)
         end_at = self.__indexOfStartEnd(path, "end", direction, data)
@@ -156,20 +163,27 @@ class Path:
                                 for timestr in self.__TIMESTAMPS]
 
     def __readData(self, data_path):
-        #def fn(row):
-            # return [row[0],
-            #         InterchangeSection(start=row[1], dest=row[2]),
-            #         row[3], row[4:]]
-        #def fn(row):
-            #return [InterchangeSection(start=row[0], dest=row[1]), row[2]]
+        # Today
         data = CSVUtil.read(data_path)
         self.__DATE = data[1][0]
         self.__DATA_HEADER = data[0]
         self.__DATA = data[1:]
-        Path.targets = [MYPATHS[0]]
+
+        # Tomorrow
+        def inc_day(datestr):
+            fmt = "%Y%m%d"
+            mydate = datetime.datetime.strptime(datestr, fmt) + timeDelta(1, "days")
+            return mydate.strftime(fmt)
+
+        tomorrow = inc_day(self.__DATE) + ".csv"
+        anchor = self.__ANCHOR_TABLE[tomorrow]
+        path = "output/step2/{}/{}".format(anchor, tomorrow)
+        self.__NEXTDAY_DATA = CSVUtil.read(path)[1:]
+
+        #Path.targets = [MYPATHS[0]]
+        Path.targets = MYPATHS
+
         self.__updateTimeStamps(self.__DATE)
-        #self.__DATA = [fn(row) for row in data[1:]]
-        #Path.targets = [ fn(row) for row in MYPATHS ]
 
     def __generateAnchorTable(self, mydir):
         for anchor in subdirs(mydir):
@@ -194,4 +208,4 @@ if __name__ == "__main__":
     #step3.test()
     step3.analyze()
     t2 = systime.clock()
-    print(round(t2-t1, 3))
+    print("Exec time of program: {}".format(round(t2-t1, 3)))
