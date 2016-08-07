@@ -5,7 +5,7 @@
 - [python3.5](https://www.python.org/downloads/)
   安裝時記得要勾選 Add Python 3.5 to PATH，讓你直接在小黑窗執行 python
 - [git](https://git-scm.com/download/win) (optional)
-- [cmder - 更強大的小黑窗](http://cmder.net/)
+- [cmder - 更強大的小黑窗](http://cmder.net/) (optional)
 
 
 # 使用方式
