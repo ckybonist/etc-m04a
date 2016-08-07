@@ -120,7 +120,6 @@ class Sensor:
             #     test+=1
             #     if test % 5 == 0:
             #         print("Found {}, {}, at {}".format(row[1], row[2], fname))
-
             if row[1] in IGNORE_SENSORS or row[2] in IGNORE_SENSORS:
                 continue
             else:

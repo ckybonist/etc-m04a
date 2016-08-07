@@ -14,13 +14,17 @@ def run():
         three steps.
     """
     step1 = Step1()
-    step2 = Step2()
-    step3 = Step3()
-
     step1.analyze()
+
+    step2 = Step2()
     step2.analyze()
+
+    step3 = Step3()
     step3.analyze()
 
 
 if __name__ == "__main__":
+    t1 = time.clock()
     run()
+    t2 = time.clock()
+    print("Time: {}".format(round(t2-t1, 3)))
