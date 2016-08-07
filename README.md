@@ -1,11 +1,11 @@
-# ETC M04A 程式 (開發中，說明將隨之變動...)
+# ETC M04A 程式
 
 
 # 需要的工具
-- [python3.5](https://www.python.org/downloads/)
+- [Python3.5](https://www.python.org/downloads/)
   安裝時記得要勾選 Add Python 3.5 to PATH，讓你直接在小黑窗執行 python
-- [git](https://git-scm.com/download/win) (optional)
-- [cmder - 更強大的小黑窗](http://cmder.net/) (optional)
+- [Git](https://git-scm.com/download/win) (optional)
+- [Cmder - 更強大的小黑窗](http://cmder.net/) (optional)
 
 
 # 使用方式
@@ -26,18 +26,17 @@
 
 # 程式架構
 
-主程式:
-- main.py: 執行所有分析
+* 主程式:
+  - main.py: 進入點
 
-三個主要模組(對應到旅行時間計算的三步驟):
+* 三個主要模組(對應到旅行時間計算的三步驟):
+  - sensor.py: 測站間平均時間
+  - interchange.py: 交流道間(路段) 平均時間
+  - path.py: 路徑旅行時間
 
-- sensor.py: 測站間平均時間
-- interchange.py: 交流道間(路段) 平均時間
-- path.py: 路徑旅行時間
-
-其它:
-- config.py: 一些全域變數
-- utils.py: helper functions
+* 其它:
+  - config.py: 一些全域變數
+  - utils.py: helper functions
 
 # 注意事項
 - 確保 data/ 內的原始資料為以下目錄結構:
@@ -46,6 +45,7 @@
     例如: 20160822/2015706/02/TDCS_M04A_20150706_020000.csv
   ```
   有時解壓縮 或 其他原因會導致目錄多了一層，像是:
+
   `20160822/20160502/20150706/02/TDCS_XXX.csv  # 多了一層 20160502`
 
   這會導致程式產生不正常的結果，甚至直接出錯。
