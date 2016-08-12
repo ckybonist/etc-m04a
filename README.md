@@ -22,6 +22,7 @@
 - output/step1: 測站間平均時間紀錄, 由 sensor.py 輸出
 - output/step2: 路段平均時間紀錄, 由 interchange.py 輸出
 - output/step3: 路徑旅行時間紀錄, 由 path.py 輸出
+- output/final: 將歷史資料中的每一筆路徑紀錄，取中位數作為最終結果
 
 
 # 程式架構
@@ -29,10 +30,11 @@
 * 主程式:
   - main.py: 進入點
 
-* 三個主要模組(對應到旅行時間計算的三步驟):
+* 四個主要模組:
   - sensor.py: 測站間平均時間
   - interchange.py: 交流道間(路段) 平均時間
   - path.py: 路徑旅行時間
+  - final.py: 旅行時間合併再中位數計算
 
 * 其它:
   - config.py: 一些全域變數
