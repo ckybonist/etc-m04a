@@ -30,8 +30,8 @@ class Sensor:
         calcHour = self.calcHourlyTravelTime
         mergeHours = self.mergeHourlyResults
         inputdir = INPUT_DIR + "/"
-        anchordir = "20160820"
-        date = "20150718"
+        anchordir = "201507"
+        date = "20150702"
         path = inputdir + "{}/{}".format(anchordir, date)
         os.chdir(path)
         hourly_results = [calcHour(hd) for hd in subdirs(".")]
@@ -110,11 +110,11 @@ class Sensor:
 
     def __calcTravelTimeOfSensorSection(self, fname):
         result = []
+        calc = self.__calcTime
         weightedTime = 0
         num_cars = 0
-        calc = self.__calcTime
 
-        test = 0
+        #test = 0
         for idx, row in enumerate(CSVUtil.read(fname)):
             # if row[1] == "01F2930S" and row[2] == "01F3019S":
             #     test+=1
@@ -130,16 +130,19 @@ class Sensor:
                     travel_time = calc(weightedTime, num_cars, row[1], row[2])
                     sensor_section = SensorSection(entry=row[1], exit=row[2])  # magic
                     result.append((sensor_section, travel_time))
+                    weightedTime = 0
+                    num_cars = 0
         return result
 
     def __calcTime(self, weightedTime, num_cars, sid_start, sid_end):
-        if num_cars == 0:
+        if num_cars == 0 or weightedTime == 0:
             start_pos = getSensorLocation(sid_start)
             end_pos = getSensorLocation(sid_end)
             velocity = 80  # km/h
             hour = 3600
             distance = abs(end_pos - start_pos)
-            return hour * math.floor(distance / velocity)  # second
+            result =  math.floor(hour * (distance / velocity))  # second
+            return result
         else:
             return math.floor(weightedTime / num_cars)
 
