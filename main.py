@@ -7,6 +7,9 @@ from sensor import Sensor as Step1
 from interchange import Interchange as Step2
 from path import Path as Step3
 
+import final
+
+
 
 def run():
     """
@@ -22,9 +25,13 @@ def run():
     step3 = Step3()
     step3.analyze()
 
+    final.run()
+
 
 if __name__ == "__main__":
     t1 = time.clock()
+
     run()
+
     t2 = time.clock()
     print("Time: {}".format(round(t2-t1, 3)))
