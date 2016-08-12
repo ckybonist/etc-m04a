@@ -176,6 +176,8 @@ class Path:
             return mydate.strftime(fmt)
 
         tomorrow = inc_day(self.__DATE) + ".csv"
+        if tomorrow == "20160407.csv":
+            return
         anchor = self.__ANCHOR_TABLE[tomorrow]
         path = "output/step2/{}/{}".format(anchor, tomorrow)
         self.__NEXTDAY_DATA = CSVUtil.read(path)[1:]
