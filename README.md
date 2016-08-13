@@ -14,7 +14,8 @@
 2. 請自行在專案根目錄創建 **data** 資料夾，並將原始資料放在其中。
 3. 跑一發分析: `python3(or python) main.py`
 
-  p.s. 執行 main.py 會跑完所有分析，但也可以單獨執行 path.py、 interchange.py、sensor.py
+  p.s.: 執行 main.py 會跑完所有分析(目前3.5 GB 資料，耗時大約半小時)。
+        如果想節省時間，也可以單獨執行 path.py、 interchange.py、sensor.py
 
 
 # 輸出
@@ -35,7 +36,8 @@
   - sensor.py: 測站間平均時間
   - interchange.py: 交流道間(路段) 平均時間
   - path.py: 路徑旅行時間
-  - final.py: 旅行時間合併再中位數計算
+  - final.py: 對於審核日所用的 N 個天數資料所產出的旅行時間，取中位數作為該審核日的
+              預測結果
 
 * 其它:
   - config.py: 一些全域變數
