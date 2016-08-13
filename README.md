@@ -20,11 +20,11 @@
 
 # 輸出
 輸出檔都在 output/:
-- output/審核結果總檔.csv: 最終結果
-- output/step1: 測站間平均時間紀錄, 由 sensor.py 輸出
-- output/step2: 路段平均時間紀錄, 由 interchange.py 輸出
-- output/step3: 路徑旅行時間紀錄, 由 path.py 輸出
-- output/final: 將歷史資料中的每一筆路徑紀錄，取中位數作為最終結果
+- output/審核結果總檔.csv: 最終結果，將所有審核日的分析結果合併在一個檔。
+- output/step1: 測站間平均時間紀錄, 由 sensor.py 輸出。
+- output/step2: 路段平均時間紀錄, 由 interchange.py 輸出。
+- output/step3: 路徑旅行時間紀錄, 由 path.py 輸出。
+- output/final: 將歷史資料中的每一筆路徑紀錄，取中位數作為最終結果，根據審核日期存成獨立的結果檔。
 
 
 # 程式架構
