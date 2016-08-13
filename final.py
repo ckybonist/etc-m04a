@@ -52,17 +52,40 @@ def finalMedianTime():
             data = CSVUtil.read(file)
             attr_info = data[0]
             data = data[1:]
-            headers = [e[:4] for e in data]
+            headers = [[date] + list(e[1:4]) for e in data]
             data = [ e[4:] for e in data ]
             datas.append(data)
         calc(datas, attr_info, headers, date)
         os.chdir("../../../")
+
+def concatResult():
+    result = []
+    csv_read = CSVUtil.read
+    csv_write = CSVUtil.write
+    prefix = "output/final/"
+    output_name = "審核結果總檔.csv"
+
+    def remain_needed(filename, idx):
+        data = csv_read(filename)
+        if idx > 0:
+            return data[1:]
+        elif idx == 0:
+            return data
+
+    files = enumerate(subfiles(prefix))
+    result = [ remain_needed(prefix+filename, idx) for idx, filename in files \
+                                            if not filename.endswith(".py") and
+                                               not filename == output_name]
+    result = flatList(result)
+
+    csv_write(result, "output/" + output_name)
 
 def run():
     if "final" not in subdirs("output"):
         os.mkdir("output/final")
 
     finalMedianTime()
+    concatResult()
 
 if __name__ == "__main__":
     run()
