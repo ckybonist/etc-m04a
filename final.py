@@ -21,7 +21,7 @@ def calc(datas, attr_info, headers, date):
     result = [ round(median(e)) for e in tmp_b ]
     result = chunks(result, 288)
 
-    result = [ list(h) + e for h in headers for e in result ]
+    result = [ h + e for h, e in zip(headers, result) ]
     result = [list(attr_info)] + result
 
     CSVUtil.write(result, "../../../output/final/" + date + ".csv")
