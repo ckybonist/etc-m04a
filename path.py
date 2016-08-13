@@ -24,7 +24,7 @@ class Path:
 
     def test(self):
         anchor = "20160820"
-        myfile = "20150718.csv"
+        myfile = "20150711.csv"
         data_path = "{}/{}/{}".format("output/step2", anchor, myfile)
         self.__readData(data_path)
         self.calcTravelTimes()
@@ -49,13 +49,15 @@ class Path:
             direction = target[2]
             #print("================")
             #print(target[0], target[1])
+            #if target[0] == "圓山" and target[1] == "高雄(九如路)":
+            #if target[0] == "圓山" and target[1] == "林口(文化一路)":
             traveltimes = self.__mergeTravelTimesOfPath(direction, target)
             row = [self.__DATE] + list(target)
             row.extend(traveltimes)
             result.append(row)
         return result
 
-    def __mergeTravelTimesOfPath(self, direction, target_path):  # TODO: too slow
+    def __mergeTravelTimesOfPath(self, direction, target_path):
         """ Return list of path travel times which start at each timestamp """
         data = self.__filterData(target_path, direction, is_tomorrow=False)
         result = []
@@ -65,19 +67,29 @@ class Path:
             result_time = 0
             cur_time = timestamp
 
+            #if timestamp.hour == 22 and timestamp.minute == 0:
+            #if timestamp.hour == 0 and timestamp.minute == 20:
             for idx, subpath in enumerate(data):
                 traveltimes = list(subpath[4:])
+                threshold = timestamp + timeDelta(5, "minutes")
+
+                if cur_time.date() > timestamp.date():  # next day
+                    traveltimes = self.__getTomorrowTravelTimes(target_path, subpath[1:4])
+
                 traveltime = int(traveltimes[time_idx])
+                result_time += traveltime
+                #print(subpath[1:4])
+                #print(cur_time)
+                #print("{} => {} s".format(time_idx, traveltime))
+                #print("------------------\n")
+
                 cur_time += timeDelta(traveltime, "seconds")
-                if idx > 0 and cur_time > timestamp:
-                    minute = cur_time.minute - (cur_time.minute % TIME_INTERVAL)  # e.g. 43 to 40
-                    dt = cur_time
-                    dt = dt.replace(minute = minute, second = 0)
-                    if cur_time.date() > timestamp.date():  # next day
-                        traveltimes = self.__getTomorrowTravelTimes(target_path, subpath[1:4])
-                    time_idx = self.__getIndexOfTime(dt)
-                    #time_idx = self.__TIMESTAMPS.index(dt)
-                result_time += int(traveltimes[time_idx])
+                #if idx > 0 and cur_time >= threshold:
+                dt = cur_time
+                minute = cur_time.minute - (cur_time.minute % TIME_INTERVAL)  # e.g. 43 to 40
+                dt = dt.replace(minute = minute, second = 0)
+                time_idx = self.__getIndexOfTime(dt)
+                #time_idx = self.__TIMESTAMPS.index(dt)
             return result_time
 
         result = [calcTimeForEachTimestamp(idx, timestamp) \

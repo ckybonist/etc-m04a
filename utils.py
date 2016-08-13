@@ -103,6 +103,8 @@ def strToDatetimeObj(datestr, timestr):
 def timeDelta(delta, dt_type):
     if dt_type == "seconds":
         return datetime.timedelta(seconds = delta)
+    elif dt_type == "minutes":
+        return datetime.timedelta(minutes = delta)
     elif dt_type == "days":
         return datetime.timedelta(days = delta)
 
