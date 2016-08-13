@@ -18,7 +18,8 @@
 
 
 # 輸出
-輸出檔都在 output/，其中有三個子資料夾:
+輸出檔都在 output/:
+- output/審核結果總檔.csv: 最終結果
 - output/step1: 測站間平均時間紀錄, 由 sensor.py 輸出
 - output/step2: 路段平均時間紀錄, 由 interchange.py 輸出
 - output/step3: 路徑旅行時間紀錄, 由 path.py 輸出
