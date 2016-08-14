@@ -52,7 +52,7 @@ def concatResult():
     csv_read = CSVUtil.read
     csv_write = CSVUtil.write
     prefix = "output/final/"
-    output_name = "審核結果總檔.csv"
+    output_name = "ETC_FGU_FINAL.csv"
 
     def remain_needed(filename, idx):
         data = csv_read(filename)
