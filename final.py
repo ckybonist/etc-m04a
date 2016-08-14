@@ -47,6 +47,12 @@ def finalMedianTime():
         calc(datas, attr_info, headers, date)
         os.chdir("../../../")
 
+
+def sortByTime(lst):
+    result = sorted(lst, key = lambda x: datetime.datetime.strptime(x[0], "%Y%m%d"))
+    return result
+
+
 def concatResult():
     result = []
     csv_read = CSVUtil.read
@@ -66,7 +72,8 @@ def concatResult():
                                             if not filename.endswith(".py") and
                                                not filename == output_name]
     result = flatList(result)
-
+    attr_info = list(result[0])
+    result = [attr_info] + sortByTime(result[1:])
     csv_write(result, "output/" + output_name)
 
 def run():
