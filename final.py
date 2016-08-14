@@ -26,19 +26,8 @@ def calc(datas, attr_info, headers, date):
 
     CSVUtil.write(result, "../../../output/final/" + date + ".csv")
 
-def test():
-    mydir = "output/step3/20160820/"
-    os.chdir(mydir)
-    datas = []
-    attr_info = []
-    for file in subfiles("."):
-        data = CSVUtil.read(file)
-        attr_info = data[0]
-        data = data[1:]
-        headers = [e[:4] for e in data]
-        data = [ e[4:] for e in data ]
-        datas.append(data)
-    calc(datas, attr_info, headers)
+def getPathId(path):
+    return MYPATHS.index(tuple(path)) + 1
 
 def finalMedianTime():
     attr_info = []
@@ -50,9 +39,9 @@ def finalMedianTime():
         os.chdir("output/step3/" + dir)
         for file in subfiles("."):
             data = CSVUtil.read(file)
-            attr_info = data[0]
+            attr_info = ["日期", "路徑編號"] + list(data[0][4:])
             data = data[1:]
-            headers = [[date] + list(e[1:4]) for e in data]
+            headers = [[date, getPathId(e[1:4])] for e in data]
             data = [ e[4:] for e in data ]
             datas.append(data)
         calc(datas, attr_info, headers, date)
