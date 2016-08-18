@@ -20,7 +20,7 @@
 
 # 輸出
 輸出檔都在 output/:
-- output/審核結果總檔.csv: 最終結果，將所有審核日的分析結果合併在一個檔。
+- output/ETC_FGU_FINAL.csv: 最終結果，將所有審核日的分析結果合併在一個檔。
 - output/step1: 測站間平均時間紀錄, 由 sensor.py 輸出。
 - output/step2: 路段平均時間紀錄, 由 interchange.py 輸出。
 - output/step3: 路徑旅行時間紀錄, 由 path.py 輸出。
