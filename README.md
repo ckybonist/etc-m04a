@@ -1,5 +1,8 @@
-# ETC M04A 程式
+# ETC-M04A 競賽程式
 
+# 競賽辦法
+- 預測某個區間內（交流道Ａ至交流道Ｂ）的平均旅行時間
+- https://www.freeway.gov.tw/Upload/201607/Q&A1050705.pdf
 
 # 需要的工具
 - [Python3.5](https://www.python.org/downloads/)
