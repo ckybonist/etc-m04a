@@ -15,7 +15,7 @@
 
 1. 下載專案: `git clone https://github.com/ckybonist/etc-m04a` 或 直接下載(右上角綠色button)
 2. 請自行在專案根目錄創建 **data** 資料夾，並將原始資料放在其中。
-3. 跑一發分析: `python3(or python) main.py`
+3. 跑一發分析: `python3 main.py`
 
   p.s.: 執行 main.py 會跑完所有分析(目前3.5 GB 資料，耗時大約半小時)。
         如果想做測試，也可以單獨執行 path.py、 interchange.py、sensor.py
