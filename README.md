@@ -2,7 +2,8 @@
 
 # 競賽辦法
 - 預測某個區間內（交流道Ａ至交流道Ｂ）的平均旅行時間
-- https://www.freeway.gov.tw/Upload/201607/Q&A1050705.pdf
+- [競賽辦法文件](https://www.freeway.gov.tw/Upload/201604/%E7%AC%AC%E4%BA%8C%E5%B1%86%E5%89%B5%E6%84%8F%E7%AB%B6%E8%B3%BD%E8%BE%A6%E6%B3%95.pdf)
+- [Q & A](https://www.freeway.gov.tw/Upload/201607/Q&A1050705.pdf)
 
 # 需要的工具
 - [Python3.5](https://www.python.org/downloads/)
